@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: cadoobi-transactions-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cadoobi_transactions
+      POSTGRES_USER: cadoobi_user
+      POSTGRES_PASSWORD: cadoobi_pass_2024
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cadoobi-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cadoobi_user -d cadoobi_transactions"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Cadoobi Transactions Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cadoobi-transactions-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cadoobi_transactions
+      SPRING_DATASOURCE_USERNAME: cadoobi_user
+      SPRING_DATASOURCE_PASSWORD: cadoobi_pass_2024
+
+      # JPA Configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_JPA_SHOW_SQL: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE: UTC
+
+      # Flyway Configuration
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+
+      # Server Configuration
+      SERVER_PORT: 8081
+
+      # Logging
+      LOGGING_LEVEL_ROOT: INFO
+      LOGGING_LEVEL_SN_SYMMETRY_CADOOBI: DEBUG
+
+      # Java Options
+      JAVA_OPTS: "-Xmx512m -Xms256m"
+    ports:
+      - "8081:8081"
+    networks:
+      - cadoobi-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/operators"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  cadoobi-network:
+    driver: bridge
