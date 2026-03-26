@@ -39,7 +39,7 @@ fi
 
 # Start services
 echo "📦 Building and starting services..."
-docker-compose up -d
+docker-compose --profile tools up -d
 
 # Wait for services to be ready
 echo ""

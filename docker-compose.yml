@@ -7,18 +7,18 @@ services:
     container_name: cadoobi-transactions-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: cadoobi_transactions
-      POSTGRES_USER: cadoobi_user
-      POSTGRES_PASSWORD: cadoobi_pass_2024
+      POSTGRES_DB: ${POSTGRES_DB:-cadoobi_transactions}
+      POSTGRES_USER: ${POSTGRES_USER:-cadoobi_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cadoobi_pass_2024}
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - cadoobi-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cadoobi_user -d cadoobi_transactions"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cadoobi_user} -d ${POSTGRES_DB:-cadoobi_transactions}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -34,45 +34,66 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      # Application
+      SPRING_APPLICATION_NAME: ${SPRING_APPLICATION_NAME:-cadoobi-transactions}
+
       # Database Configuration
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cadoobi_transactions
-      SPRING_DATASOURCE_USERNAME: cadoobi_user
-      SPRING_DATASOURCE_PASSWORD: cadoobi_pass_2024
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-cadoobi_transactions}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-cadoobi_user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-cadoobi_pass_2024}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      DB_POOL_MIN_IDLE: ${DB_POOL_MIN_IDLE:-5}
 
       # JPA Configuration
-      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
-      SPRING_JPA_SHOW_SQL: "false"
-      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
-      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
-      SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE: UTC
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-validate}
+      SPRING_JPA_SHOW_SQL: ${SPRING_JPA_SHOW_SQL:-false}
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: ${SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT:-org.hibernate.dialect.PostgreSQLDialect}
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: ${SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL:-true}
+      SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE: ${SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE:-UTC}
 
       # Flyway Configuration
-      SPRING_FLYWAY_ENABLED: "true"
-      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
-      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      SPRING_FLYWAY_ENABLED: ${SPRING_FLYWAY_ENABLED:-true}
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: ${SPRING_FLYWAY_BASELINE_ON_MIGRATE:-true}
 
       # Server Configuration
-      SERVER_PORT: 8081
+      SERVER_PORT: ${SERVER_PORT:-8081}
+      SERVER_COMPRESSION_ENABLED: ${SERVER_COMPRESSION_ENABLED:-true}
+
+      # Actuator
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:-health,info,metrics}
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: ${MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS:-when-authorized}
+
+      # Application Settings
+      APP_NOTIFICATION_MAX_RETRY_ATTEMPTS: ${APP_NOTIFICATION_MAX_RETRY_ATTEMPTS:-5}
+      APP_GIFT_CARD_EXPIRY_DAYS: ${APP_GIFT_CARD_EXPIRY_DAYS:-365}
+      APP_PAYMENT_EXPIRY_HOURS: ${APP_PAYMENT_EXPIRY_HOURS:-24}
 
       # Logging
-      LOGGING_LEVEL_ROOT: INFO
-      LOGGING_LEVEL_SN_SYMMETRY_CADOOBI: DEBUG
+      LOGGING_LEVEL_ROOT: ${LOGGING_LEVEL_ROOT:-INFO}
+      LOGGING_LEVEL_SN_SYMMETRY_CADOOBI: ${LOGGING_LEVEL_SN_SYMMETRY_CADOOBI:-DEBUG}
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB:-INFO}
+      LOGGING_LEVEL_ORG_HIBERNATE: ${LOGGING_LEVEL_ORG_HIBERNATE:-WARN}
 
       # Java Options
-      JAVA_OPTS: "-Xmx512m -Xms256m"
+      JAVA_OPTS: ${JAVA_OPTS:--Xmx512m -Xms256m}
     ports:
-      - "8081:8081"
+      - "${APP_PORT:-8081}:8081"
+    volumes:
+      - app_logs:/app/logs
     networks:
       - cadoobi-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/operators"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
 
+
 volumes:
   postgres_data:
+    driver: local
+  app_logs:
     driver: local
 
 networks:
