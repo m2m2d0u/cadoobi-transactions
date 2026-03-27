@@ -95,6 +95,36 @@ The service will start on port `8081` by default.
 
 ## API Endpoints
 
+All endpoints return responses wrapped in a consistent `ApiResponse<T>` format. See [API_RESPONSE_FORMAT.md](API_RESPONSE_FORMAT.md) for details.
+
+### Response Format
+
+**Success (200/201):**
+```json
+{
+  "success": true,
+  "message": "Operation completed successfully",
+  "data": { /* response data */ },
+  "timestamp": "2026-03-26T21:30:00Z"
+}
+```
+
+**Error (4xx/5xx):**
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "error": {
+    "code": 400,
+    "type": "ERROR_TYPE",
+    "message": "Detailed error message",
+    "details": { /* optional validation details */ }
+  },
+  "timestamp": "2026-03-26T21:30:00Z",
+  "path": "/api/endpoint"
+}
+```
+
 ### Payment Operations
 
 #### Initiate Payment
@@ -114,6 +144,27 @@ Content-Type: application/json
   "recipientPhone": "221779876543",
   "recipientName": "Store Merchant",
   "callbackUrl": "https://cadoobi.com/webhooks/payment"
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Payment initiated successfully",
+  "data": {
+    "id": "uuid",
+    "reference": "ORDER-123",
+    "status": "INITIATED",
+    "amount": 10000.00,
+    "feeAmount": 100.00,
+    "netAmount": 9900.00,
+    "currency": "XOF",
+    "operatorCode": "WAVE",
+    "expiresAt": "2026-03-27T21:30:00Z",
+    "createdAt": "2026-03-26T21:30:00Z"
+  },
+  "timestamp": "2026-03-26T21:30:00Z"
 }
 ```
 
