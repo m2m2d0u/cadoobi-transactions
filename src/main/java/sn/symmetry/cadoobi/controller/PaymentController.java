@@ -23,17 +23,13 @@ public class PaymentController {
     public ResponseEntity<ApiResponse<PaymentResponse>> initiatePayment(
         @Valid @RequestBody InitiatePaymentRequest request
     ) {
-        log.info("Received payment initiation request: reference={}, merchant={}, operator={}",
-            request.getReference(), request.getMerchantId(), request.getOperatorCode());
+        log.info("Received payment initiation request: merchant={}, operator={}",
+            request.getMerchantCode(), request.getOperatorCode());
 
         PaymentResponse payment = paymentService.initiatePayment(request);
 
-        ApiResponse<PaymentResponse> response = ApiResponse.created(
-            payment,
-            "Payment initiated successfully"
-        );
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(ApiResponse.created(payment, "Payment initiated successfully"));
     }
 
     @GetMapping("/{reference}")
@@ -44,12 +40,7 @@ public class PaymentController {
 
         PaymentResponse payment = paymentService.getPaymentByReference(reference);
 
-        ApiResponse<PaymentResponse> response = ApiResponse.success(
-            payment,
-            "Payment retrieved successfully"
-        );
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(payment, "Payment retrieved successfully"));
     }
 
     @PostMapping("/callbacks/{operatorCode}")
@@ -62,10 +53,6 @@ public class PaymentController {
 
         // TODO: Process callback and update payment status
 
-        ApiResponse<Void> response = ApiResponse.success(
-            "Callback received and queued for processing"
-        );
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success("Callback received and queued for processing"));
     }
 }

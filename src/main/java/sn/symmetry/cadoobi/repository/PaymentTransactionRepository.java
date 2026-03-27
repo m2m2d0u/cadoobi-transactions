@@ -16,7 +16,7 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
 
     Optional<PaymentTransaction> findByOperatorTransactionId(String operatorTransactionId);
 
-    List<PaymentTransaction> findByMerchantIdAndStatus(String merchantId, PaymentStatus status);
+    List<PaymentTransaction> findByMerchantIdAndStatus(UUID merchantId, PaymentStatus status);
 
     List<PaymentTransaction> findByStatus(PaymentStatus status);
 

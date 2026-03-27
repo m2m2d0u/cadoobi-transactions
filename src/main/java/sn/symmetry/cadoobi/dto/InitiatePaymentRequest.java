@@ -11,14 +11,6 @@ import java.math.BigDecimal;
 @Builder
 public class InitiatePaymentRequest {
 
-    @NotBlank(message = "Reference is required")
-    @Size(max = 100, message = "Reference must not exceed 100 characters")
-    private String reference;
-
-    @NotBlank(message = "Merchant ID is required")
-    @Size(max = 36, message = "Merchant ID must not exceed 36 characters")
-    private String merchantId;
-
     @NotBlank(message = "Merchant code is required")
     @Size(max = 10, message = "Merchant code must not exceed 10 characters")
     private String merchantCode;

@@ -53,7 +53,7 @@ public class GiftCardService {
 
         GiftCard giftCard = GiftCard.builder()
             .paymentTransaction(payment)
-            .merchantId(payment.getMerchantId())
+            .merchantId(payment.getMerchant().getSymmetryMerchantId())
             .cardCode(cardCode)
             .qrCodeData(qrCodeData)
             .initialAmount(payment.getNetAmount())
@@ -66,7 +66,7 @@ public class GiftCardService {
         giftCard = giftCardRepository.save(giftCard);
 
         log.info("Created gift card: code={}, merchant={}, amount={}",
-            cardCode, payment.getMerchantId(), payment.getNetAmount());
+            cardCode, payment.getMerchant().getSymmetryMerchantId(), payment.getNetAmount());
 
         return giftCard;
     }

@@ -1,0 +1,568 @@
+{
+  "info": {
+    "name": "Cadoobi Transactions API",
+    "description": "API collection for the Cadoobi Transactions service — covers Merchants, Operators, Payments, and Gift Cards.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",          "value": "http://localhost:8081", "type": "string" },
+    { "key": "merchantId",       "value": "",                      "type": "string" },
+    { "key": "merchantCode",     "value": "CADOOBI01",             "type": "string" },
+    { "key": "operatorId",       "value": "",                      "type": "string" },
+    { "key": "paymentReference", "value": "",                      "type": "string" },
+    { "key": "cardCode",         "value": "",                      "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Merchants",
+      "item": [
+        {
+          "name": "Get All Merchants",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/merchants",
+              "host": ["{{baseUrl}}"],
+              "path": ["merchants"],
+              "query": [
+                { "key": "status", "value": "ACTIVE", "disabled": true, "description": "Filter by status: PENDING | ACTIVE | SUSPENDED | BLOCKED" }
+              ]
+            },
+            "description": "Returns all merchants. Optionally filter by `status` query param."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"1 merchant(s) found\",\n  \"data\": [\n    {\n      \"id\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n      \"code\": \"CADOOBI01\",\n      \"name\": \"Cadoobi Store\",\n      \"logoUrl\": null,\n      \"phone\": \"+221770000001\",\n      \"businessType\": \"E-commerce\",\n      \"email\": \"store@cadoobi.sn\",\n      \"address\": \"Dakar, Sénégal\",\n      \"country\": \"SN\",\n      \"rccm\": \"SN-DKR-2024-B-12345\",\n      \"ninea\": \"12345678 2A3\",\n      \"ownerFullName\": \"Mamadou Diallo\",\n      \"ownerEmail\": \"owner@cadoobi.sn\",\n      \"ownerPhone\": \"+221770000002\",\n      \"ownerCni\": \"1 2345 67890 12345\",\n      \"compensationAccount\": {\n        \"type\": \"BANK\",\n        \"bankName\": \"Ecobank Sénégal\",\n        \"accountNumber\": \"SN1234567890\",\n        \"accountHolder\": \"Cadoobi Store\",\n        \"iban\": \"SN08SN0100152000048500003035\",\n        \"swift\": \"ECOCSNDA\",\n        \"operatorCode\": null,\n        \"operatorPhone\": null,\n        \"operatorHolderName\": null\n      },\n      \"symmetryMerchantId\": null,\n      \"agencyCode\": null,\n      \"status\": \"PENDING\",\n      \"createdAt\": \"2024-01-01T00:00:00Z\",\n      \"updatedAt\": \"2024-01-01T00:00:00Z\"\n    }\n  ],\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Merchant by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/merchants/{{merchantId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["merchants", "{{merchantId}}"]
+            },
+            "description": "Returns a single merchant by its UUID."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Merchant retrieved successfully\",\n  \"data\": {\n    \"id\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"code\": \"CADOOBI01\",\n    \"name\": \"Cadoobi Store\",\n    \"logoUrl\": null,\n    \"phone\": \"+221770000001\",\n    \"businessType\": \"E-commerce\",\n    \"email\": \"store@cadoobi.sn\",\n    \"address\": \"Dakar, Sénégal\",\n    \"country\": \"SN\",\n    \"rccm\": \"SN-DKR-2024-B-12345\",\n    \"ninea\": \"12345678 2A3\",\n    \"ownerFullName\": \"Mamadou Diallo\",\n    \"ownerEmail\": \"owner@cadoobi.sn\",\n    \"ownerPhone\": \"+221770000002\",\n    \"ownerCni\": \"1 2345 67890 12345\",\n    \"compensationAccount\": {\n      \"type\": \"BANK\",\n      \"bankName\": \"Ecobank Sénégal\",\n      \"accountNumber\": \"SN1234567890\",\n      \"accountHolder\": \"Cadoobi Store\",\n      \"iban\": \"SN08SN0100152000048500003035\",\n      \"swift\": \"ECOCSNDA\",\n      \"operatorCode\": null,\n      \"operatorPhone\": null,\n      \"operatorHolderName\": null\n    },\n    \"symmetryMerchantId\": null,\n    \"agencyCode\": null,\n    \"status\": \"ACTIVE\",\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 404,\n    \"type\": \"NOT_FOUND\",\n    \"message\": \"Merchant not found with id: aa0e8400-e29b-41d4-a716-000000000099\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/merchants/aa0e8400-e29b-41d4-a716-000000000099\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Merchant by Code",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/merchants/code/{{merchantCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["merchants", "code", "{{merchantCode}}"]
+            },
+            "description": "Returns a single merchant by its short business code."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Merchant retrieved successfully\",\n  \"data\": {\n    \"id\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"code\": \"CADOOBI01\",\n    \"name\": \"Cadoobi Store\",\n    \"status\": \"ACTIVE\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Merchant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('merchantId',   json.data.id);",
+                  "    pm.collectionVariables.set('merchantCode', json.data.code);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"CADOOBI01\",\n  \"name\": \"Cadoobi Store\",\n  \"phone\": \"+221770000001\",\n  \"businessType\": \"E-commerce\",\n  \"email\": \"store@cadoobi.sn\",\n  \"address\": \"Dakar, Sénégal\",\n  \"country\": \"SN\",\n  \"rccm\": \"SN-DKR-2024-B-12345\",\n  \"ninea\": \"12345678 2A3\",\n  \"ownerFullName\": \"Mamadou Diallo\",\n  \"ownerEmail\": \"owner@cadoobi.sn\",\n  \"ownerPhone\": \"+221770000002\",\n  \"ownerCni\": \"1 2345 67890 12345\",\n  \"compensationAccount\": {\n    \"type\": \"BANK\",\n    \"bankName\": \"Ecobank Sénégal\",\n    \"accountNumber\": \"SN1234567890\",\n    \"accountHolder\": \"Cadoobi Store\",\n    \"iban\": \"SN08SN0100152000048500003035\",\n    \"swift\": \"ECOCSNDA\"\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/merchants",
+              "host": ["{{baseUrl}}"],
+              "path": ["merchants"]
+            },
+            "description": "Creates a new merchant. Status defaults to `PENDING`. The auto-test saves `id` into `{{merchantId}}` and `code` into `{{merchantCode}}`.\n\n**compensationAccount.type** must be `BANK` or `OPERATOR`.\n- For `BANK`: fill `bankName`, `accountNumber`, `accountHolder`, `iban`, `swift`.\n- For `OPERATOR`: fill `operatorCode` (must match an existing operator: WAVE, OM, FREE), `operatorPhone`, `operatorHolderName`. `operatorName` is read-only (returned in responses)."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Merchant created successfully\",\n  \"data\": {\n    \"id\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"code\": \"CADOOBI01\",\n    \"name\": \"Cadoobi Store\",\n    \"logoUrl\": null,\n    \"phone\": \"+221770000001\",\n    \"businessType\": \"E-commerce\",\n    \"email\": \"store@cadoobi.sn\",\n    \"address\": \"Dakar, Sénégal\",\n    \"country\": \"SN\",\n    \"rccm\": \"SN-DKR-2024-B-12345\",\n    \"ninea\": \"12345678 2A3\",\n    \"ownerFullName\": \"Mamadou Diallo\",\n    \"ownerEmail\": \"owner@cadoobi.sn\",\n    \"ownerPhone\": \"+221770000002\",\n    \"ownerCni\": \"1 2345 67890 12345\",\n    \"compensationAccount\": {\n      \"type\": \"BANK\",\n      \"bankName\": \"Ecobank Sénégal\",\n      \"accountNumber\": \"SN1234567890\",\n      \"accountHolder\": \"Cadoobi Store\",\n      \"iban\": \"SN08SN0100152000048500003035\",\n      \"swift\": \"ECOCSNDA\",\n      \"operatorCode\": null,\n      \"operatorPhone\": null,\n      \"operatorHolderName\": null\n    },\n    \"symmetryMerchantId\": null,\n    \"agencyCode\": null,\n    \"status\": \"PENDING\",\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "409 Conflict — duplicate code",
+              "status": "Conflict",
+              "code": 409,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 409,\n    \"type\": \"CONFLICT\",\n    \"message\": \"Merchant with code CADOOBI01 already exists\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/merchants\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 400,\n    \"type\": \"VALIDATION_ERROR\",\n    \"message\": \"Validation failed\",\n    \"details\": {\n      \"code\": \"Code is required\",\n      \"email\": \"Email must be valid\",\n      \"country\": \"Country must be a 2-character ISO code\"\n    }\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/merchants\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Merchant",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cadoobi Store (updated)\",\n  \"phone\": \"+221770000001\",\n  \"businessType\": \"E-commerce\",\n  \"email\": \"store@cadoobi.sn\",\n  \"address\": \"Plateau, Dakar, Sénégal\",\n  \"country\": \"SN\",\n  \"rccm\": \"SN-DKR-2024-B-12345\",\n  \"ninea\": \"12345678 2A3\",\n  \"ownerFullName\": \"Mamadou Diallo\",\n  \"ownerEmail\": \"owner@cadoobi.sn\",\n  \"ownerPhone\": \"+221770000002\",\n  \"ownerCni\": \"1 2345 67890 12345\",\n  \"compensationAccount\": {\n    \"bankName\": \"Ecobank Sénégal\",\n    \"accountNumber\": \"SN1234567890\",\n    \"accountHolder\": \"Cadoobi Store\",\n    \"iban\": \"SN08SN0100152000048500003035\",\n    \"swift\": \"ECOCSNDA\"\n  },\n  \"status\": \"ACTIVE\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/merchants/{{merchantId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["merchants", "{{merchantId}}"]
+            },
+            "description": "Full update of a merchant. You can also change `status` (PENDING | ACTIVE | SUSPENDED | BLOCKED)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Merchant updated successfully\",\n  \"data\": {\n    \"id\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"code\": \"CADOOBI01\",\n    \"name\": \"Cadoobi Store (updated)\",\n    \"status\": \"ACTIVE\",\n    \"updatedAt\": \"2024-06-01T10:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Merchant",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/merchants/{{merchantId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["merchants", "{{merchantId}}"]
+            },
+            "description": "Permanently deletes a merchant."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Merchant deleted successfully\",\n  \"data\": null,\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 404,\n    \"type\": \"NOT_FOUND\",\n    \"message\": \"Merchant not found with id: aa0e8400-e29b-41d4-a716-000000000099\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/merchants/aa0e8400-e29b-41d4-a716-000000000099\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Operators",
+      "item": [
+        {
+          "name": "Get All Active Operators",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/operators",
+              "host": ["{{baseUrl}}"],
+              "path": ["operators"]
+            },
+            "description": "Returns the list of all active operators."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"3 active operator(s) found\",\n  \"data\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"code\": \"WAVE\",\n      \"name\": \"Wave\",\n      \"country\": \"SN\",\n      \"supportsPayin\": true,\n      \"supportsPayout\": true,\n      \"apiBaseUrl\": \"https://api.wave.com\",\n      \"isActive\": true,\n      \"createdAt\": \"2024-01-01T00:00:00Z\"\n    },\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"code\": \"OM\",\n      \"name\": \"Orange Money\",\n      \"country\": \"SN\",\n      \"supportsPayin\": true,\n      \"supportsPayout\": true,\n      \"apiBaseUrl\": \"https://api.orange.sn\",\n      \"isActive\": true,\n      \"createdAt\": \"2024-01-01T00:00:00Z\"\n    },\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n      \"code\": \"FREE\",\n      \"name\": \"Free Money\",\n      \"country\": \"SN\",\n      \"supportsPayin\": true,\n      \"supportsPayout\": true,\n      \"apiBaseUrl\": \"https://api.free.sn\",\n      \"isActive\": true,\n      \"createdAt\": \"2024-01-01T00:00:00Z\"\n    }\n  ],\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Operator by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/operators/{{operatorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["operators", "{{operatorId}}"]
+            },
+            "description": "Returns a single operator by its UUID."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Operator retrieved successfully\",\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"code\": \"WAVE\",\n    \"name\": \"Wave\",\n    \"country\": \"SN\",\n    \"supportsPayin\": true,\n    \"supportsPayout\": true,\n    \"apiBaseUrl\": \"https://api.wave.com\",\n    \"isActive\": true,\n    \"createdAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 404,\n    \"type\": \"NOT_FOUND\",\n    \"message\": \"Operator not found\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/operators/550e8400-e29b-41d4-a716-446655440099\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Operator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('operatorId', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"WAVE\",\n  \"name\": \"Wave\",\n  \"country\": \"SN\",\n  \"supportsPayin\": true,\n  \"supportsPayout\": true,\n  \"apiBaseUrl\": \"https://api.wave.com\",\n  \"isActive\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/operators",
+              "host": ["{{baseUrl}}"],
+              "path": ["operators"]
+            },
+            "description": "Creates a new operator. The auto-test saves the returned `id` into `{{operatorId}}`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Operator created successfully\",\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"code\": \"WAVE\",\n    \"name\": \"Wave\",\n    \"country\": \"SN\",\n    \"supportsPayin\": true,\n    \"supportsPayout\": true,\n    \"apiBaseUrl\": \"https://api.wave.com\",\n    \"isActive\": true,\n    \"createdAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "409 Conflict",
+              "status": "Conflict",
+              "code": 409,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 409,\n    \"type\": \"CONFLICT\",\n    \"message\": \"Operator with code WAVE already exists\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/operators\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Operator Fees",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/operators/{{operatorId}}/fees",
+              "host": ["{{baseUrl}}"],
+              "path": ["operators", "{{operatorId}}", "fees"]
+            },
+            "description": "Returns all fee configurations for a given operator."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"2 fee configuration(s) found\",\n  \"data\": [\n    {\n      \"id\": \"660e8400-e29b-41d4-a716-446655440000\",\n      \"operatorId\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"operationType\": \"PAYIN\",\n      \"feeType\": \"PERCENTAGE\",\n      \"feePercentage\": 0.0200,\n      \"feeFixed\": null,\n      \"minAmount\": 0,\n      \"maxAmount\": null,\n      \"currency\": \"XOF\",\n      \"isActive\": true,\n      \"effectiveFrom\": \"2024-01-01\",\n      \"effectiveTo\": null\n    },\n    {\n      \"id\": \"660e8400-e29b-41d4-a716-446655440001\",\n      \"operatorId\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"operationType\": \"PAYOUT\",\n      \"feeType\": \"PERCENTAGE\",\n      \"feePercentage\": 0.0200,\n      \"feeFixed\": null,\n      \"minAmount\": 0,\n      \"maxAmount\": null,\n      \"currency\": \"XOF\",\n      \"isActive\": true,\n      \"effectiveFrom\": \"2024-01-01\",\n      \"effectiveTo\": null\n    }\n  ],\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Operator Fee",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operationType\": \"PAYIN\",\n  \"feeType\": \"PERCENTAGE\",\n  \"feePercentage\": 0.0200,\n  \"feeFixed\": null,\n  \"minAmount\": 0,\n  \"maxAmount\": null,\n  \"currency\": \"XOF\",\n  \"isActive\": true,\n  \"effectiveFrom\": \"2024-01-01\",\n  \"effectiveTo\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/operators/{{operatorId}}/fees",
+              "host": ["{{baseUrl}}"],
+              "path": ["operators", "{{operatorId}}", "fees"]
+            },
+            "description": "Creates a fee configuration for an operator. `feePercentage` is a decimal (e.g. `0.02` = 2%)."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Operator fee created successfully\",\n  \"data\": {\n    \"id\": \"660e8400-e29b-41d4-a716-446655440000\",\n    \"operatorId\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"operationType\": \"PAYIN\",\n    \"feeType\": \"PERCENTAGE\",\n    \"feePercentage\": 0.0200,\n    \"feeFixed\": null,\n    \"minAmount\": 0,\n    \"maxAmount\": null,\n    \"currency\": \"XOF\",\n    \"isActive\": true,\n    \"effectiveFrom\": \"2024-01-01\",\n    \"effectiveTo\": null\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Initiate Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('paymentReference', json.data.reference);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"merchantCode\": \"{{merchantCode}}\",\n  \"operatorCode\": \"WAVE\",\n  \"amount\": 5000,\n  \"currency\": \"XOF\",\n  \"payerPhone\": \"+221770000001\",\n  \"payerFullName\": \"Mamadou Diallo\",\n  \"recipientPhone\": \"+221770000002\",\n  \"recipientName\": \"Cadoobi Store\",\n  \"callbackUrl\": \"https://merchant.example.com/callbacks/payment\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"]
+            },
+            "description": "Initiates a new payment. The reference is auto-generated as `{MERCHANTCODE}-{YYYYMMDD}-{8hex}`. The auto-test saves the returned reference into `{{paymentReference}}`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payment initiated successfully\",\n  \"data\": {\n    \"id\": \"770e8400-e29b-41d4-a716-446655440000\",\n    \"reference\": \"CADOOBI01-20240301-A1B2C3D4\",\n    \"merchantCode\": \"CADOOBI01\",\n    \"merchantName\": \"Cadoobi Store\",\n    \"operatorCode\": \"WAVE\",\n    \"amount\": 5000,\n    \"feeAmount\": 100,\n    \"netAmount\": 4900,\n    \"currency\": \"XOF\",\n    \"status\": \"INITIATED\",\n    \"operatorTransactionId\": null,\n    \"paymentUrl\": null,\n    \"expiresAt\": \"2024-03-02T12:00:00Z\",\n    \"createdAt\": \"2024-03-01T12:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "404 Merchant Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 404,\n    \"type\": \"NOT_FOUND\",\n    \"message\": \"Merchant not found with code: UNKNOWN\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": \"/payments\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 400,\n    \"type\": \"VALIDATION_ERROR\",\n    \"message\": \"Validation failed\",\n    \"details\": {\n      \"amount\": \"must be greater than or equal to 0.01\",\n      \"callbackUrl\": \"must not be blank\"\n    }\n  },\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": \"/payments\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Payment by Reference",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentReference}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "{{paymentReference}}"]
+            },
+            "description": "Retrieves a payment by its auto-generated reference."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payment retrieved successfully\",\n  \"data\": {\n    \"id\": \"770e8400-e29b-41d4-a716-446655440000\",\n    \"reference\": \"CADOOBI01-20240301-A1B2C3D4\",\n    \"merchantCode\": \"CADOOBI01\",\n    \"merchantName\": \"Cadoobi Store\",\n    \"operatorCode\": \"WAVE\",\n    \"amount\": 5000,\n    \"feeAmount\": 100,\n    \"netAmount\": 4900,\n    \"currency\": \"XOF\",\n    \"status\": \"COMPLETED\",\n    \"operatorTransactionId\": \"WAVE-TXN-123456\",\n    \"paymentUrl\": null,\n    \"expiresAt\": \"2024-03-02T12:00:00Z\",\n    \"createdAt\": \"2024-03-01T12:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 404,\n    \"type\": \"NOT_FOUND\",\n    \"message\": \"Payment not found with reference: UNKNOWN-REF\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": \"/payments/UNKNOWN-REF\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Handle Operator Callback — WAVE",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"WAVE-TXN-123456\",\n  \"reference\": \"CADOOBI01-20240301-A1B2C3D4\",\n  \"status\": \"COMPLETED\",\n  \"amount\": 5000,\n  \"currency\": \"XOF\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/callbacks/WAVE",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "callbacks", "WAVE"]
+            },
+            "description": "Receives an asynchronous callback from the WAVE operator. Replace `WAVE` with `OM` or `FREE` for other operators."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Callback received and queued for processing\",\n  \"data\": null,\n  \"error\": null,\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Gift Cards",
+      "item": [
+        {
+          "name": "Get Gift Card Balance",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/cards/{{cardCode}}/balance",
+              "host": ["{{baseUrl}}"],
+              "path": ["cards", "{{cardCode}}", "balance"]
+            },
+            "description": "Returns the current balance and status of a gift card."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Gift card balance retrieved successfully\",\n  \"data\": {\n    \"id\": \"880e8400-e29b-41d4-a716-446655440000\",\n    \"cardCode\": \"GIFT-ABCD-1234\",\n    \"merchantId\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"initialAmount\": 10000,\n    \"balance\": 7500,\n    \"currency\": \"XOF\",\n    \"status\": \"PARTIALLY_USED\",\n    \"expiresAt\": \"2025-01-01T00:00:00Z\",\n    \"createdAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 404,\n    \"type\": \"NOT_FOUND\",\n    \"message\": \"Gift card not found\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/cards/INVALID-CODE/balance\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Redeem Gift Card",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"merchantId\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n  \"amountToRedeem\": 2500,\n  \"idempotencyKey\": \"redeem-unique-key-2024-001\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cards/{{cardCode}}/redeem",
+              "host": ["{{baseUrl}}"],
+              "path": ["cards", "{{cardCode}}", "redeem"]
+            },
+            "description": "Redeems an amount from a gift card. Use a unique `idempotencyKey` per redemption attempt to avoid duplicate charges."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Gift card redeemed successfully\",\n  \"data\": {\n    \"id\": \"990e8400-e29b-41d4-a716-446655440000\",\n    \"giftCardId\": \"880e8400-e29b-41d4-a716-446655440000\",\n    \"merchantId\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"idempotencyKey\": \"redeem-unique-key-2024-001\",\n    \"amountRedeemed\": 2500,\n    \"remainingBalance\": 5000,\n    \"status\": \"COMPLETED\",\n    \"redeemedAt\": \"2024-01-01T12:00:00Z\",\n    \"createdAt\": \"2024-01-01T12:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "400 Bad Request",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 400,\n    \"type\": \"BAD_REQUEST\",\n    \"message\": \"Insufficient balance\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/cards/GIFT-ABCD-1234/redeem\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

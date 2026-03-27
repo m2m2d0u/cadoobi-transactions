@@ -25,11 +25,9 @@ public class PaymentTransaction extends BaseEntity {
     @Column(name = "reference", nullable = false, unique = true, length = 100)
     private String reference;
 
-    @Column(name = "merchant_id", nullable = false, length = 36)
-    private String merchantId;
-
-    @Column(name = "merchant_code", nullable = false, length = 10)
-    private String merchantCode;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "merchant_id", nullable = false)
+    private Merchant merchant;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "operator_id", nullable = false)

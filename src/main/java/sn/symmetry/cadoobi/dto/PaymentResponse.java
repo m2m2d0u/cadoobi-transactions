@@ -15,8 +15,8 @@ public class PaymentResponse {
 
     private UUID id;
     private String reference;
-    private String merchantId;
     private String merchantCode;
+    private String merchantName;
     private String operatorCode;
     private BigDecimal amount;
     private BigDecimal feeAmount;

@@ -4,19 +4,23 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sn.symmetry.cadoobi.domain.entity.Merchant;
 import sn.symmetry.cadoobi.domain.entity.Operator;
 import sn.symmetry.cadoobi.domain.entity.PaymentTransaction;
 import sn.symmetry.cadoobi.domain.enums.OperationType;
 import sn.symmetry.cadoobi.domain.enums.PaymentStatus;
 import sn.symmetry.cadoobi.dto.InitiatePaymentRequest;
 import sn.symmetry.cadoobi.dto.PaymentResponse;
-import sn.symmetry.cadoobi.exception.DuplicateResourceException;
 import sn.symmetry.cadoobi.exception.ResourceNotFoundException;
 import sn.symmetry.cadoobi.repository.PaymentTransactionRepository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -26,15 +30,13 @@ public class PaymentService {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final OperatorService operatorService;
     private final OperatorFeeService operatorFeeService;
+    private final MerchantService merchantService;
 
     private static final long PAYMENT_EXPIRY_HOURS = 24;
 
     @Transactional
     public PaymentResponse initiatePayment(InitiatePaymentRequest request) {
-        if (paymentTransactionRepository.existsByReference(request.getReference())) {
-            throw new DuplicateResourceException("Payment with reference " + request.getReference() + " already exists");
-        }
-
+        Merchant merchant = merchantService.findByCode(request.getMerchantCode());
         Operator operator = operatorService.getOperatorByCode(request.getOperatorCode());
 
         if (!operator.getSupportsPayin()) {
@@ -48,11 +50,11 @@ public class PaymentService {
         );
 
         BigDecimal netAmount = request.getAmount().subtract(feeAmount);
+        String reference = generateReference(merchant.getCode());
 
         PaymentTransaction payment = PaymentTransaction.builder()
-            .reference(request.getReference())
-            .merchantId(request.getMerchantId())
-            .merchantCode(request.getMerchantCode())
+            .reference(reference)
+            .merchant(merchant)
             .operator(operator)
             .amount(request.getAmount())
             .feeAmount(feeAmount)
@@ -70,7 +72,7 @@ public class PaymentService {
         payment = paymentTransactionRepository.save(payment);
 
         log.info("Initiated payment: reference={}, merchant={}, operator={}, amount={}, fee={}",
-            payment.getReference(), payment.getMerchantId(), operator.getCode(),
+            payment.getReference(), merchant.getCode(), operator.getCode(),
             payment.getAmount(), payment.getFeeAmount());
 
         return toResponse(payment);
@@ -101,12 +103,20 @@ public class PaymentService {
         return payment;
     }
 
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private String generateReference(String merchantCode) {
+        String date = LocalDate.now(ZoneOffset.UTC).format(DateTimeFormatter.BASIC_ISO_DATE);
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        return merchantCode + "-" + date + "-" + suffix;
+    }
+
     private PaymentResponse toResponse(PaymentTransaction payment) {
         return PaymentResponse.builder()
             .id(payment.getId())
             .reference(payment.getReference())
-            .merchantId(payment.getMerchantId())
-            .merchantCode(payment.getMerchantCode())
+            .merchantCode(payment.getMerchant().getCode())
+            .merchantName(payment.getMerchant().getName())
             .operatorCode(payment.getOperator().getCode())
             .amount(payment.getAmount())
             .feeAmount(payment.getFeeAmount())
