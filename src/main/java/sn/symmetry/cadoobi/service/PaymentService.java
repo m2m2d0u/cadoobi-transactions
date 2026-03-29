@@ -116,7 +116,7 @@ public class PaymentService {
             .id(payment.getId())
             .reference(payment.getReference())
             .merchantCode(payment.getMerchant().getCode())
-            .merchantName(payment.getMerchant().getName())
+            .merchantId(payment.getMerchant().getSymmetryMerchantId())
             .operatorCode(payment.getOperator().getCode())
             .amount(payment.getAmount())
             .feeAmount(payment.getFeeAmount())

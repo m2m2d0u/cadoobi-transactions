@@ -40,6 +40,21 @@ server:
   compression:
     enabled: ${SERVER_COMPRESSION_ENABLED:true}
 
+# SpringDoc OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: ${SPRINGDOC_API_DOCS_ENABLED:true}
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${SPRINGDOC_SWAGGER_UI_ENABLED:true}
+    operations-sorter: alpha
+    tags-sorter: alpha
+    display-request-duration: true
+    doc-expansion: none
+  packages-to-scan: sn.symmetry.cadoobi.controller
+  show-actuator: false
+
 # Actuator Configuration
 management:
   endpoints:

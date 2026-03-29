@@ -8,7 +8,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import sn.symmetry.cadoobi.dto.ApiResponse;
+import sn.symmetry.cadoobi.dto.ControllerApiResponse;
 import sn.symmetry.cadoobi.exception.BusinessException;
 import sn.symmetry.cadoobi.exception.DuplicateResourceException;
 import sn.symmetry.cadoobi.exception.ResourceNotFoundException;
@@ -26,13 +26,13 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(
+    public ResponseEntity<ControllerApiResponse<Void>> handleResourceNotFoundException(
         ResourceNotFoundException ex,
         HttpServletRequest request
     ) {
         log.error("Resource not found: {}", ex.getMessage());
 
-        ApiResponse<Void> response = ApiResponse.notFound(
+        ControllerApiResponse<Void> response = ControllerApiResponse.notFound(
             ex.getMessage(),
             request.getRequestURI()
         );
@@ -41,13 +41,13 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<ApiResponse<Void>> handleDuplicateResourceException(
+    public ResponseEntity<ControllerApiResponse<Void>> handleDuplicateResourceException(
         DuplicateResourceException ex,
         HttpServletRequest request
     ) {
         log.error("Duplicate resource: {}", ex.getMessage());
 
-        ApiResponse<Void> response = ApiResponse.conflict(
+        ControllerApiResponse<Void> response = ControllerApiResponse.conflict(
             ex.getMessage(),
             request.getRequestURI()
         );
@@ -56,13 +56,13 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBusinessException(
+    public ResponseEntity<ControllerApiResponse<Void>> handleBusinessException(
         BusinessException ex,
         HttpServletRequest request
     ) {
         log.error("Business exception: {}", ex.getMessage());
 
-        ApiResponse<Void> response = ApiResponse.badRequest(
+        ControllerApiResponse<Void> response = ControllerApiResponse.badRequest(
             ex.getMessage(),
             request.getRequestURI()
         );
@@ -71,7 +71,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Void>> handleValidationException(
+    public ResponseEntity<ControllerApiResponse<Void>> handleValidationException(
         MethodArgumentNotValidException ex,
         HttpServletRequest request
     ) {
@@ -87,7 +87,7 @@ public class GlobalExceptionHandler {
 
         log.error("Validation error: {}", errorMessage);
 
-        ApiResponse<Void> response = ApiResponse.validationError(
+        ControllerApiResponse<Void> response = ControllerApiResponse.validationError(
             "Validation failed for one or more fields",
             request.getRequestURI(),
             fieldErrors
@@ -97,13 +97,13 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(
+    public ResponseEntity<ControllerApiResponse<Void>> handleIllegalArgumentException(
         IllegalArgumentException ex,
         HttpServletRequest request
     ) {
         log.error("Illegal argument: {}", ex.getMessage());
 
-        ApiResponse<Void> response = ApiResponse.badRequest(
+        ControllerApiResponse<Void> response = ControllerApiResponse.badRequest(
             ex.getMessage(),
             request.getRequestURI()
         );
@@ -112,13 +112,13 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleGenericException(
+    public ResponseEntity<ControllerApiResponse<Void>> handleGenericException(
         Exception ex,
         HttpServletRequest request
     ) {
         log.error("Unexpected error", ex);
 
-        ApiResponse<Void> response = ApiResponse.internalError(
+        ControllerApiResponse<Void> response = ControllerApiResponse.internalError(
             "An unexpected error occurred. Please contact support if the problem persists.",
             request.getRequestURI()
         );
