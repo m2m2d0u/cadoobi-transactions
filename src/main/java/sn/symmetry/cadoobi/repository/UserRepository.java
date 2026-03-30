@@ -69,6 +69,15 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByIdWithRolesAndPermissions(UUID id);
 
     /**
+     * Find user by email with roles and permissions eagerly loaded (used for JWT auth)
+     */
+    @Query("SELECT DISTINCT u FROM User u " +
+           "LEFT JOIN FETCH u.roles r " +
+           "LEFT JOIN FETCH r.permissions " +
+           "WHERE u.email = :email")
+    Optional<User> findByEmailWithRolesAndPermissions(@Param("email") String email);
+
+    /**
      * Full-text search across fullName, email, role name and role code (case-insensitive)
      */
     @Query(value = "SELECT DISTINCT u FROM User u LEFT JOIN u.roles r " +

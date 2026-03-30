@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sn.symmetry.cadoobi.domain.entity.Role;
@@ -30,6 +31,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers() {
@@ -254,22 +256,12 @@ public class UserService {
         return new HashSet<>(roles);
     }
 
-    /**
-     * Simple password hashing (NOTE: In production, use BCryptPasswordEncoder)
-     * This is a placeholder - replace with proper password encoder
-     */
     private String hashPassword(String password) {
-        // TODO: Replace with BCryptPasswordEncoder.encode(password)
-        return "HASHED_" + password;
+        return passwordEncoder.encode(password);
     }
 
-    /**
-     * Simple password verification (NOTE: In production, use BCryptPasswordEncoder)
-     * This is a placeholder - replace with proper password verification
-     */
     private boolean verifyPassword(String rawPassword, String hashedPassword) {
-        // TODO: Replace with BCryptPasswordEncoder.matches(rawPassword, hashedPassword)
-        return hashedPassword.equals("HASHED_" + rawPassword);
+        return passwordEncoder.matches(rawPassword, hashedPassword);
     }
 
     private UserResponse toResponse(User user) {
