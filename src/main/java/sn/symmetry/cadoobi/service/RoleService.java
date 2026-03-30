@@ -2,6 +2,8 @@ package sn.symmetry.cadoobi.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sn.symmetry.cadoobi.domain.entity.Permission;
@@ -44,6 +46,30 @@ public class RoleService {
         return roleRepository.findByIsActiveTrue().stream()
             .map(this::toResponse)
             .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RoleResponse> getAllRoles(Pageable pageable) {
+        log.debug("Fetching all roles (paginated)");
+        return roleRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RoleResponse> getActiveRoles(Pageable pageable) {
+        log.debug("Fetching active roles (paginated)");
+        return roleRepository.findByIsActiveTrue(pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RoleResponse> searchRoles(String search, Pageable pageable) {
+        log.debug("Searching roles with query: {}", search);
+        return roleRepository.searchRoles(search.trim(), pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RoleResponse> searchActiveRoles(String search, Pageable pageable) {
+        log.debug("Searching active roles with query: {}", search);
+        return roleRepository.searchActiveRoles(search.trim(), pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -177,11 +203,15 @@ public class RoleService {
     }
 
     private RoleResponse toResponse(Role role) {
+        List<PermissionResponse> permissions = role.getPermissions().stream()
+                .map(this::toPermissionResponse)
+                .toList();
         return RoleResponse.builder()
             .id(role.getId())
             .code(role.getCode())
             .name(role.getName())
             .description(role.getDescription())
+            .permissions(permissions)
             .isActive(role.getIsActive())
             .isSystemRole(role.getIsSystemRole())
             .createdAt(role.getCreatedAt())

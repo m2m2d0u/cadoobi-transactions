@@ -10,11 +10,16 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import sn.symmetry.cadoobi.domain.enums.UserStatus;
 import sn.symmetry.cadoobi.dto.*;
+import sn.symmetry.cadoobi.dto.common.ControllerApiResponse;
 import sn.symmetry.cadoobi.service.UserService;
 
 import java.util.List;
@@ -32,7 +37,7 @@ public class UserController {
     @GetMapping
     @Operation(
         summary = "List all users",
-        description = "Retrieves all users in the system, optionally filtered by status"
+        description = "Retrieves users with pagination. Supports free-text search across name, email and role (search param), and optional status filter."
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -47,16 +52,26 @@ public class UserController {
         )
     })
     public ResponseEntity<ControllerApiResponse<List<UserResponse>>> getAllUsers(
+        @Parameter(description = "Free-text search across name, email and role name/code")
+        @RequestParam(required = false) String search,
         @Parameter(description = "Filter by user status")
-        @RequestParam(required = false) UserStatus status
+        @RequestParam(required = false) UserStatus status,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        List<UserResponse> users = status != null
-            ? userService.getUsersByStatus(status)
-            : userService.getAllUsers();
+        Page<UserResponse> page;
+        if (search != null && !search.isBlank()) {
+            page = status != null
+                ? userService.searchUsers(search, status, pageable)
+                : userService.searchUsers(search, pageable);
+        } else {
+            page = status != null
+                ? userService.getUsersByStatus(status, pageable)
+                : userService.getAllUsers(pageable);
+        }
 
-        return ResponseEntity.ok(ControllerApiResponse.success(
-            users,
-            users.size() + " user(s) found"
+        return ResponseEntity.ok(ControllerApiResponse.paged(
+            page,
+            page.getTotalElements() + " user(s) found"
         ));
     }
 

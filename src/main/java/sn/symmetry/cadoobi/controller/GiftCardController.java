@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import sn.symmetry.cadoobi.dto.ControllerApiResponse;
+import sn.symmetry.cadoobi.dto.common.ControllerApiResponse;
 import sn.symmetry.cadoobi.dto.GiftCardBalanceResponse;
 import sn.symmetry.cadoobi.dto.RedeemGiftCardRequest;
 import sn.symmetry.cadoobi.dto.RedemptionResponse;

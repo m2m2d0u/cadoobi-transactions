@@ -1,10 +1,12 @@
-package sn.symmetry.cadoobi.dto;
+package sn.symmetry.cadoobi.dto.common;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
+import org.springframework.data.domain.Page;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Generic API response wrapper for consistent response format across all endpoints.
@@ -55,6 +57,52 @@ public class ControllerApiResponse<T> {
      */
     @Schema(description = "Request path that generated this response", example = "/payments/PAY-123")
     private String path;
+
+    /**
+     * Pagination metadata (present only for paginated list responses)
+     */
+    @Schema(description = "Pagination metadata (present only for paginated list responses)")
+    private PageInfo pagination;
+
+    /**
+     * Pagination metadata nested object
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "Pagination metadata for list responses")
+    public static class PageInfo {
+        @Schema(description = "Current page number (0-based)", example = "0")
+        private Integer page;
+
+        @Schema(description = "Number of items per page", example = "20")
+        private Integer size;
+
+        @Schema(description = "Total number of items across all pages", example = "150")
+        private Long totalElements;
+
+        @Schema(description = "Total number of pages", example = "8")
+        private Integer totalPages;
+
+        @Schema(description = "Whether this is the first page", example = "true")
+        private Boolean first;
+
+        @Schema(description = "Whether this is the last page", example = "false")
+        private Boolean last;
+
+        public static PageInfo from(Page<?> page) {
+            return PageInfo.builder()
+                    .page(page.getNumber())
+                    .size(page.getSize())
+                    .totalElements(page.getTotalElements())
+                    .totalPages(page.getTotalPages())
+                    .first(page.isFirst())
+                    .last(page.isLast())
+                    .build();
+        }
+    }
 
     /**
      * Error details nested object
@@ -136,6 +184,19 @@ public class ControllerApiResponse<T> {
                 .success(true)
                 .message(message)
                 .data(data)
+                .timestamp(Instant.now())
+                .build();
+    }
+
+    /**
+     * Creates a paginated response wrapping a Spring Data {@link Page}
+     */
+    public static <D> ControllerApiResponse<List<D>> paged(Page<D> page, String message) {
+        return ControllerApiResponse.<List<D>>builder()
+                .success(true)
+                .message(message)
+                .data(page.getContent())
+                .pagination(PageInfo.from(page))
                 .timestamp(Instant.now())
                 .build();
     }

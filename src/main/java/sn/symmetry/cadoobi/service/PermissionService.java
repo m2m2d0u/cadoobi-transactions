@@ -2,6 +2,8 @@ package sn.symmetry.cadoobi.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sn.symmetry.cadoobi.domain.entity.Permission;
@@ -39,6 +41,30 @@ public class PermissionService {
     }
 
     @Transactional(readOnly = true)
+    public Page<PermissionResponse> getAllPermissions(Pageable pageable) {
+        log.debug("Fetching all permissions (paginated)");
+        return permissionRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PermissionResponse> getActivePermissions(Pageable pageable) {
+        log.debug("Fetching active permissions (paginated)");
+        return permissionRepository.findByIsActiveTrue(pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PermissionResponse> searchPermissions(String search, Pageable pageable) {
+        log.debug("Searching permissions with query: {}", search);
+        return permissionRepository.searchPermissions(search.trim(), pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PermissionResponse> searchActivePermissions(String search, Pageable pageable) {
+        log.debug("Searching active permissions with query: {}", search);
+        return permissionRepository.searchActivePermissions(search.trim(), pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
     public PermissionResponse getPermissionById(UUID id) {
         log.debug("Fetching permission by id: {}", id);
         Permission permission = permissionRepository.findById(id)
@@ -60,6 +86,12 @@ public class PermissionService {
         return permissionRepository.findByResource(resource).stream()
             .map(this::toResponse)
             .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PermissionResponse> getPermissionsByResource(String resource, Pageable pageable) {
+        log.debug("Fetching permissions by resource (paginated): {}", resource);
+        return permissionRepository.findByResource(resource, pageable).map(this::toResponse);
     }
 
     @Transactional

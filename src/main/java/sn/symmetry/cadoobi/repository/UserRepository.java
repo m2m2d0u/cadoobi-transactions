@@ -1,7 +1,10 @@
 package sn.symmetry.cadoobi.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import sn.symmetry.cadoobi.domain.entity.User;
 import sn.symmetry.cadoobi.domain.enums.UserStatus;
@@ -28,6 +31,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * Find users by status
      */
     List<User> findByStatus(UserStatus status);
+
+    /**
+     * Find users by status with pagination
+     */
+    Page<User> findByStatus(UserStatus status, Pageable pageable);
 
     /**
      * Find users with expiredpassword reset tokens
@@ -59,4 +67,36 @@ public interface UserRepository extends JpaRepository<User, UUID> {
            "LEFT JOIN FETCH r.permissions " +
            "WHERE u.id = :id")
     Optional<User> findByIdWithRolesAndPermissions(UUID id);
+
+    /**
+     * Full-text search across fullName, email, role name and role code (case-insensitive)
+     */
+    @Query(value = "SELECT DISTINCT u FROM User u LEFT JOIN u.roles r " +
+                   "WHERE LOWER(u.fullName) LIKE LOWER(CONCAT('%', :search, '%')) " +
+                   "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) " +
+                   "OR LOWER(r.name) LIKE LOWER(CONCAT('%', :search, '%')) " +
+                   "OR LOWER(r.code) LIKE LOWER(CONCAT('%', :search, '%'))",
+           countQuery = "SELECT COUNT(DISTINCT u) FROM User u LEFT JOIN u.roles r " +
+                        "WHERE LOWER(u.fullName) LIKE LOWER(CONCAT('%', :search, '%')) " +
+                        "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) " +
+                        "OR LOWER(r.name) LIKE LOWER(CONCAT('%', :search, '%')) " +
+                        "OR LOWER(r.code) LIKE LOWER(CONCAT('%', :search, '%'))")
+    Page<User> searchUsers(@Param("search") String search, Pageable pageable);
+
+    /**
+     * Full-text search with an additional status filter
+     */
+    @Query(value = "SELECT DISTINCT u FROM User u LEFT JOIN u.roles r " +
+                   "WHERE u.status = :status " +
+                   "AND (LOWER(u.fullName) LIKE LOWER(CONCAT('%', :search, '%')) " +
+                   "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) " +
+                   "OR LOWER(r.name) LIKE LOWER(CONCAT('%', :search, '%')) " +
+                   "OR LOWER(r.code) LIKE LOWER(CONCAT('%', :search, '%')))",
+           countQuery = "SELECT COUNT(DISTINCT u) FROM User u LEFT JOIN u.roles r " +
+                        "WHERE u.status = :status " +
+                        "AND (LOWER(u.fullName) LIKE LOWER(CONCAT('%', :search, '%')) " +
+                        "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) " +
+                        "OR LOWER(r.name) LIKE LOWER(CONCAT('%', :search, '%')) " +
+                        "OR LOWER(r.code) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<User> searchUsersByStatus(@Param("search") String search, @Param("status") UserStatus status, Pageable pageable);
 }

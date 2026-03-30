@@ -2,6 +2,7 @@ package sn.symmetry.cadoobi.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sn.symmetry.cadoobi.domain.entity.Operator;
@@ -77,6 +78,12 @@ public class OperatorFeeService {
             return BigDecimal.ZERO;
         }
 
+        BigDecimal computedFee = calculateOperatorFee(amount, fee);
+
+        return computedFee.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal calculateOperatorFee(BigDecimal amount, OperatorFee fee) {
         BigDecimal computedFee = BigDecimal.ZERO;
 
         if (fee.getFeeType() == FeeType.PERCENTAGE || fee.getFeeType() == FeeType.MIXED) {
@@ -90,8 +97,7 @@ public class OperatorFeeService {
                 computedFee = computedFee.add(fee.getFeeFixed());
             }
         }
-
-        return computedFee.setScale(2, RoundingMode.HALF_UP);
+        return computedFee;
     }
 
     private void validateFeeRequest(CreateOperatorFeeRequest request) {

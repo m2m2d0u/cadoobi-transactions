@@ -10,10 +10,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import sn.symmetry.cadoobi.dto.ControllerApiResponse;
+import sn.symmetry.cadoobi.dto.common.ControllerApiResponse;
 import sn.symmetry.cadoobi.dto.CreateRoleRequest;
 import sn.symmetry.cadoobi.dto.RoleResponse;
 import sn.symmetry.cadoobi.dto.UpdateRoleRequest;
@@ -34,7 +38,7 @@ public class RoleController {
     @GetMapping
     @Operation(
         summary = "List all roles",
-        description = "Retrieves all roles in the system, optionally filtered by active status"
+        description = "Retrieves roles with pagination. Supports free-text search across name and code, and optional active-only filter."
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -49,16 +53,26 @@ public class RoleController {
         )
     })
     public ResponseEntity<ControllerApiResponse<List<RoleResponse>>> getAllRoles(
+        @Parameter(description = "Free-text search across name and code")
+        @RequestParam(required = false) String search,
         @Parameter(description = "Filter by active status only")
-        @RequestParam(required = false, defaultValue = "false") boolean activeOnly
+        @RequestParam(required = false, defaultValue = "false") boolean activeOnly,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        List<RoleResponse> roles = activeOnly
-            ? roleService.getActiveRoles()
-            : roleService.getAllRoles();
+        Page<RoleResponse> page;
+        if (search != null && !search.isBlank()) {
+            page = activeOnly
+                ? roleService.searchActiveRoles(search, pageable)
+                : roleService.searchRoles(search, pageable);
+        } else {
+            page = activeOnly
+                ? roleService.getActiveRoles(pageable)
+                : roleService.getAllRoles(pageable);
+        }
 
-        return ResponseEntity.ok(ControllerApiResponse.success(
-            roles,
-            roles.size() + " role(s) found"
+        return ResponseEntity.ok(ControllerApiResponse.paged(
+            page,
+            page.getTotalElements() + " role(s) found"
         ));
     }
 

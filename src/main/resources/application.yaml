@@ -35,6 +35,8 @@ spring:
 
 # Server Configuration
 server:
+  servlet:
+    context-path: ${SERVER_SERVLET_CONTEXT_PATH:/api/v1}
   port: ${SERVER_PORT:8081}
   shutdown: graceful
   compression:
@@ -75,7 +77,10 @@ app:
   notification:
     max-retry-attempts: ${APP_NOTIFICATION_MAX_RETRY_ATTEMPTS:5}
     retry-delay-seconds: ${APP_NOTIFICATION_RETRY_DELAY_SECONDS:5,30,120,600,3600}
-
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - https://spare.symmetry.sn
   # Gift card settings
   gift-card:
     code-length: ${APP_GIFT_CARD_CODE_LENGTH:12}

@@ -10,10 +10,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import sn.symmetry.cadoobi.dto.ControllerApiResponse;
+import sn.symmetry.cadoobi.dto.common.ControllerApiResponse;
 import sn.symmetry.cadoobi.dto.CreatePermissionRequest;
 import sn.symmetry.cadoobi.dto.PermissionResponse;
 import sn.symmetry.cadoobi.service.PermissionService;
@@ -33,7 +37,7 @@ public class PermissionController {
     @GetMapping
     @Operation(
         summary = "List all permissions",
-        description = "Retrieves all permissions in the system"
+        description = "Retrieves permissions with pagination. Supports free-text search across code, name and resource, and optional active-only filter."
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -48,16 +52,26 @@ public class PermissionController {
         )
     })
     public ResponseEntity<ControllerApiResponse<List<PermissionResponse>>> getAllPermissions(
+        @Parameter(description = "Free-text search across code, name and resource")
+        @RequestParam(required = false) String search,
         @Parameter(description = "Filter by active status only")
-        @RequestParam(required = false, defaultValue = "false") boolean activeOnly
+        @RequestParam(required = false, defaultValue = "false") boolean activeOnly,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        List<PermissionResponse> permissions = activeOnly
-            ? permissionService.getActivePermissions()
-            : permissionService.getAllPermissions();
+        Page<PermissionResponse> page;
+        if (search != null && !search.isBlank()) {
+            page = activeOnly
+                ? permissionService.searchActivePermissions(search, pageable)
+                : permissionService.searchPermissions(search, pageable);
+        } else {
+            page = activeOnly
+                ? permissionService.getActivePermissions(pageable)
+                : permissionService.getAllPermissions(pageable);
+        }
 
-        return ResponseEntity.ok(ControllerApiResponse.success(
-            permissions,
-            permissions.size() + " permission(s) found"
+        return ResponseEntity.ok(ControllerApiResponse.paged(
+            page,
+            page.getTotalElements() + " permission(s) found"
         ));
     }
 
@@ -128,7 +142,7 @@ public class PermissionController {
     @GetMapping("/resource/{resource}")
     @Operation(
         summary = "Get permissions by resource",
-        description = "Retrieves all permissions for a specific resource category"
+        description = "Retrieves permissions for a specific resource category with pagination"
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -144,12 +158,13 @@ public class PermissionController {
     })
     public ResponseEntity<ControllerApiResponse<List<PermissionResponse>>> getPermissionsByResource(
         @Parameter(description = "Resource category", required = true, example = "payment")
-        @PathVariable String resource
+        @PathVariable String resource,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        List<PermissionResponse> permissions = permissionService.getPermissionsByResource(resource);
-        return ResponseEntity.ok(ControllerApiResponse.success(
-            permissions,
-            permissions.size() + " permission(s) found for resource: " + resource
+        Page<PermissionResponse> page = permissionService.getPermissionsByResource(resource, pageable);
+        return ResponseEntity.ok(ControllerApiResponse.paged(
+            page,
+            page.getTotalElements() + " permission(s) found for resource: " + resource
         ));
     }
 

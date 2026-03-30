@@ -14,7 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import sn.symmetry.cadoobi.domain.enums.MerchantStatus;
-import sn.symmetry.cadoobi.dto.ControllerApiResponse;
+import sn.symmetry.cadoobi.dto.common.ControllerApiResponse;
 import sn.symmetry.cadoobi.dto.CreateMerchantRequest;
 import sn.symmetry.cadoobi.dto.MerchantResponse;
 import sn.symmetry.cadoobi.dto.UpdateMerchantRequest;

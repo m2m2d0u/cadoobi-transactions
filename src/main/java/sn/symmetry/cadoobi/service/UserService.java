@@ -2,6 +2,8 @@ package sn.symmetry.cadoobi.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sn.symmetry.cadoobi.domain.entity.Role;
@@ -43,6 +45,30 @@ public class UserService {
         return userRepository.findByStatus(status).stream()
             .map(this::toResponse)
             .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        log.debug("Fetching all users (paginated)");
+        return userRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<UserResponse> getUsersByStatus(UserStatus status, Pageable pageable) {
+        log.debug("Fetching users by status (paginated): {}", status);
+        return userRepository.findByStatus(status, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<UserResponse> searchUsers(String search, Pageable pageable) {
+        log.debug("Searching users with query: {}", search);
+        return userRepository.searchUsers(search.trim(), pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<UserResponse> searchUsers(String search, UserStatus status, Pageable pageable) {
+        log.debug("Searching users with query: {} and status: {}", search, status);
+        return userRepository.searchUsersByStatus(search.trim(), status, pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -247,12 +273,16 @@ public class UserService {
     }
 
     private UserResponse toResponse(User user) {
+        List<RoleResponse> roles = user.getRoles().stream()
+                .map(this::toRoleResponse)
+                .collect(Collectors.toList());
         return UserResponse.builder()
             .id(user.getId())
             .email(user.getEmail())
             .fullName(user.getFullName())
             .phone(user.getPhone())
             .status(user.getStatus())
+            .roles(roles)
             .emailVerified(user.getEmailVerified())
             .failedLoginAttempts(user.getFailedLoginAttempts())
             .lastLoginAt(user.getLastLoginAt())

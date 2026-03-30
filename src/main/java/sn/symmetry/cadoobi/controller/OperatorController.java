@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import sn.symmetry.cadoobi.dto.*;
+import sn.symmetry.cadoobi.dto.common.ControllerApiResponse;
 import sn.symmetry.cadoobi.service.OperatorFeeService;
 import sn.symmetry.cadoobi.service.OperatorService;
 

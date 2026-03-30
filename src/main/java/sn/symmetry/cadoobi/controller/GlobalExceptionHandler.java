@@ -8,7 +8,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import sn.symmetry.cadoobi.dto.ControllerApiResponse;
+import sn.symmetry.cadoobi.dto.common.ControllerApiResponse;
 import sn.symmetry.cadoobi.exception.BusinessException;
 import sn.symmetry.cadoobi.exception.DuplicateResourceException;
 import sn.symmetry.cadoobi.exception.ResourceNotFoundException;
