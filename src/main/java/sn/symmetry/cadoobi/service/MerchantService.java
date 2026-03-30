@@ -2,11 +2,14 @@ package sn.symmetry.cadoobi.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sn.symmetry.cadoobi.domain.entity.CompensationAccount;
 import sn.symmetry.cadoobi.domain.entity.Merchant;
 import sn.symmetry.cadoobi.domain.entity.Operator;
+import sn.symmetry.cadoobi.domain.entity.User;
 import sn.symmetry.cadoobi.domain.enums.CompensationAccountType;
 import sn.symmetry.cadoobi.domain.enums.MerchantStatus;
 import sn.symmetry.cadoobi.dto.CompensationAccountDto;
@@ -16,6 +19,7 @@ import sn.symmetry.cadoobi.dto.UpdateMerchantRequest;
 import sn.symmetry.cadoobi.exception.DuplicateResourceException;
 import sn.symmetry.cadoobi.exception.ResourceNotFoundException;
 import sn.symmetry.cadoobi.repository.MerchantRepository;
+import sn.symmetry.cadoobi.repository.UserRepository;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +30,7 @@ import java.util.UUID;
 public class MerchantService {
 
     private final MerchantRepository merchantRepository;
+    private final UserRepository userRepository;
     private final OperatorService operatorService;
 
     @Transactional(readOnly = true)
@@ -40,6 +45,16 @@ public class MerchantService {
         return merchantRepository.findByStatus(status).stream()
             .map(this::toResponse)
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MerchantResponse> getAllMerchants(Pageable pageable) {
+        return merchantRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MerchantResponse> getMerchantsByStatus(MerchantStatus status, Pageable pageable) {
+        return merchantRepository.findByStatus(status, pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -61,6 +76,9 @@ public class MerchantService {
             throw new DuplicateResourceException("Merchant with email " + request.getEmail() + " already exists");
         }
 
+        User user = userRepository.findById(request.getUserId())
+            .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.getUserId()));
+
         Merchant merchant = Merchant.builder()
             .code(request.getCode().toUpperCase())
             .name(request.getName())
@@ -77,6 +95,7 @@ public class MerchantService {
             .ownerPhone(request.getOwnerPhone())
             .ownerCni(request.getOwnerCni())
             .compensationAccount(toCompensationAccount(request.getCompensationAccount()))
+            .user(user)
             .status(MerchantStatus.PENDING)
             .build();
 
@@ -106,6 +125,11 @@ public class MerchantService {
         if (request.getStatus() != null) {
             merchant.setStatus(request.getStatus());
         }
+        if (request.getUserId() != null) {
+            User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.getUserId()));
+            merchant.setUser(user);
+        }
 
         merchant = merchantRepository.save(merchant);
         log.info("Updated merchant: code={}, status={}", merchant.getCode(), merchant.getStatus());
@@ -117,6 +141,14 @@ public class MerchantService {
         Merchant merchant = findById(id);
         merchantRepository.delete(merchant);
         log.info("Deleted merchant: code={}", merchant.getCode());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MerchantResponse> getMerchantsByUserId(UUID userId, Pageable pageable) {
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found: " + userId);
+        }
+        return merchantRepository.findByUserId(userId, pageable).map(this::toResponse);
     }
 
     // ── Internal helpers ──────────────────────────────────────────────────────
@@ -195,6 +227,9 @@ public class MerchantService {
             .symmetryMerchantId(merchant.getSymmetryMerchantId())
             .agencyCode(merchant.getAgencyCode())
             .status(merchant.getStatus())
+            .userId(merchant.getUser() != null ? merchant.getUser().getId() : null)
+            .userFullName(merchant.getUser() != null ? merchant.getUser().getFullName() : null)
+            .userEmail(merchant.getUser() != null ? merchant.getUser().getEmail() : null)
             .createdAt(merchant.getCreatedAt())
             .updatedAt(merchant.getUpdatedAt())
             .build();

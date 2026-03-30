@@ -7,7 +7,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 import sn.symmetry.cadoobi.domain.enums.UserStatus;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -113,6 +115,13 @@ public class User {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Set<Role> roles = new HashSet<>();
+
+    /** Merchants managed by this user */
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @Builder.Default
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<Merchant> merchants = new ArrayList<>();
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

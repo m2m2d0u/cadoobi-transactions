@@ -6,6 +6,8 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 import sn.symmetry.cadoobi.domain.enums.MerchantStatus;
 
+import java.util.UUID;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -80,4 +82,7 @@ public class UpdateMerchantRequest {
     // Status change
     @Schema(description = "Merchant account status", example = "ACTIVE")
     private MerchantStatus status;
+
+    @Schema(description = "Reassign to a different managing user (optional — omit to keep current user)")
+    private UUID userId;
 }

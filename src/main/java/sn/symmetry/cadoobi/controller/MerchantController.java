@@ -10,6 +10,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,7 +39,7 @@ public class MerchantController {
     @GetMapping
     @Operation(
         summary = "List all merchants",
-        description = "Retrieves all merchants, optionally filtered by status"
+        description = "Retrieves merchants with pagination, optionally filtered by status"
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -51,15 +55,16 @@ public class MerchantController {
     })
     public ResponseEntity<ControllerApiResponse<List<MerchantResponse>>> getAllMerchants(
         @Parameter(description = "Filter by merchant status (optional)", example = "ACTIVE")
-        @RequestParam(required = false) MerchantStatus status
+        @RequestParam(required = false) MerchantStatus status,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        List<MerchantResponse> merchants = status != null
-            ? merchantService.getMerchantsByStatus(status)
-            : merchantService.getAllMerchants();
+        Page<MerchantResponse> page = status != null
+            ? merchantService.getMerchantsByStatus(status, pageable)
+            : merchantService.getAllMerchants(pageable);
 
-        return ResponseEntity.ok(ControllerApiResponse.success(
-            merchants,
-            merchants.size() + " merchant(s) found"
+        return ResponseEntity.ok(ControllerApiResponse.paged(
+            page,
+            page.getTotalElements() + " merchant(s) found"
         ));
     }
 
@@ -124,6 +129,40 @@ public class MerchantController {
         return ResponseEntity.ok(ControllerApiResponse.success(
             merchantService.getMerchantByCode(code),
             "Merchant retrieved successfully"
+        ));
+    }
+
+    @GetMapping("/user/{userId}")
+    @Operation(
+        summary = "Get merchants by user",
+        description = "Retrieves all merchants managed by a specific user, with pagination"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Merchants retrieved successfully",
+            content = @Content(schema = @Schema(implementation = MerchantResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "User not found",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        )
+    })
+    public ResponseEntity<ControllerApiResponse<List<MerchantResponse>>> getMerchantsByUser(
+        @Parameter(description = "User identifier (UUID)", required = true)
+        @PathVariable UUID userId,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Page<MerchantResponse> page = merchantService.getMerchantsByUserId(userId, pageable);
+        return ResponseEntity.ok(ControllerApiResponse.paged(
+            page,
+            page.getTotalElements() + " merchant(s) found for user"
         ));
     }
 

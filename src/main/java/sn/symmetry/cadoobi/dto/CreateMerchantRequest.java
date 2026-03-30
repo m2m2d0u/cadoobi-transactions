@@ -5,6 +5,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
+import java.util.UUID;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -80,4 +82,8 @@ public class CreateMerchantRequest {
     @Schema(description = "Compensation account for receiving merchant funds")
     @Valid
     private CompensationAccountDto compensationAccount;
+
+    @Schema(description = "ID of the user who will manage this merchant", required = true)
+    @NotNull(message = "Managing user is required")
+    private UUID userId;
 }

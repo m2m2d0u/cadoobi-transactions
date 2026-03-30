@@ -64,6 +64,11 @@ public class Merchant extends BaseEntity {
     @Column(name = "owner_cni", length = 50)
     private String ownerCni;
 
+    /** System user who manages this merchant account */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
     // ── Compensation account ──────────────────────────────────────────────────
 
     @Embedded

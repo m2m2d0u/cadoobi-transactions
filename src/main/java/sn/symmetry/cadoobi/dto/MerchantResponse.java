@@ -74,6 +74,16 @@ public class MerchantResponse {
     @Schema(description = "Merchant status", example = "ACTIVE")
     private MerchantStatus status;
 
+    // Managing user
+    @Schema(description = "ID of the managing user")
+    private UUID userId;
+
+    @Schema(description = "Full name of the managing user", example = "Amadou Diallo")
+    private String userFullName;
+
+    @Schema(description = "Email of the managing user", example = "amadou@example.com")
+    private String userEmail;
+
     @Schema(description = "Creation timestamp", example = "2024-03-26T10:30:00Z")
     private Instant createdAt;
 
