@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.context.annotation.Lazy;
 import sn.symmetry.cadoobi.domain.entity.CompensationAccount;
 import sn.symmetry.cadoobi.domain.entity.Merchant;
+import sn.symmetry.cadoobi.domain.entity.MerchantAccount;
 import sn.symmetry.cadoobi.domain.entity.Operator;
 import sn.symmetry.cadoobi.domain.entity.User;
 import sn.symmetry.cadoobi.domain.enums.CompensationAccountType;
@@ -18,9 +19,11 @@ import sn.symmetry.cadoobi.dto.MerchantResponse;
 import sn.symmetry.cadoobi.dto.UpdateMerchantRequest;
 import sn.symmetry.cadoobi.exception.DuplicateResourceException;
 import sn.symmetry.cadoobi.exception.ResourceNotFoundException;
+import sn.symmetry.cadoobi.repository.MerchantAccountRepository;
 import sn.symmetry.cadoobi.repository.MerchantRepository;
 import sn.symmetry.cadoobi.repository.UserRepository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,15 +35,18 @@ public class MerchantService {
     private final UserRepository userRepository;
     private final OperatorService operatorService;
     private final MerchantFeeService merchantFeeService;
+    private final MerchantAccountRepository merchantAccountRepository;
 
     public MerchantService(MerchantRepository merchantRepository,
                            UserRepository userRepository,
                            OperatorService operatorService,
-                           @Lazy MerchantFeeService merchantFeeService) {
+                           @Lazy MerchantFeeService merchantFeeService,
+                           MerchantAccountRepository merchantAccountRepository) {
         this.merchantRepository = merchantRepository;
         this.userRepository = userRepository;
         this.operatorService = operatorService;
         this.merchantFeeService = merchantFeeService;
+        this.merchantAccountRepository = merchantAccountRepository;
     }
 
     @Transactional(readOnly = true)
@@ -111,6 +117,12 @@ public class MerchantService {
 
         merchant = merchantRepository.save(merchant);
         merchantFeeService.applyDefaultFeesToMerchant(merchant);
+        merchantAccountRepository.save(MerchantAccount.builder()
+            .merchant(merchant)
+            .currency("XOF")
+            .balance(BigDecimal.ZERO)
+            .lockedBalance(BigDecimal.ZERO)
+            .build());
         log.info("Created merchant: code={}, name={}", merchant.getCode(), merchant.getName());
         return toResponse(merchant);
     }

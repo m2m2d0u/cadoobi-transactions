@@ -2,6 +2,7 @@ package sn.symmetry.cadoobi.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sn.symmetry.cadoobi.domain.entity.Merchant;
@@ -11,6 +12,7 @@ import sn.symmetry.cadoobi.domain.enums.OperationType;
 import sn.symmetry.cadoobi.domain.enums.PaymentStatus;
 import sn.symmetry.cadoobi.dto.InitiatePaymentRequest;
 import sn.symmetry.cadoobi.dto.PaymentResponse;
+import sn.symmetry.cadoobi.event.PaymentCompletedEvent;
 import sn.symmetry.cadoobi.exception.ResourceNotFoundException;
 import sn.symmetry.cadoobi.repository.PaymentTransactionRepository;
 
@@ -31,6 +33,7 @@ public class PaymentService {
     private final OperatorService operatorService;
     private final OperatorFeeService operatorFeeService;
     private final MerchantService merchantService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final long PAYMENT_EXPIRY_HOURS = 24;
 
@@ -99,6 +102,10 @@ public class PaymentService {
 
         log.info("Updated payment status: reference={}, status={}, operatorTxnId={}",
             reference, status, operatorTransactionId);
+
+        if (status == PaymentStatus.COMPLETED) {
+            eventPublisher.publishEvent(new PaymentCompletedEvent(this, payment));
+        }
 
         return payment;
     }

@@ -8,10 +8,9 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "payout_transactions", indexes = {
-    @Index(name = "idx_payout_redemption", columnList = "redemption_id"),
-    @Index(name = "idx_payout_merchant", columnList = "merchant_id"),
-    @Index(name = "idx_payout_status", columnList = "status"),
-    @Index(name = "idx_payout_operator", columnList = "operator_id"),
+    @Index(name = "idx_payout_merchant",    columnList = "merchant_id"),
+    @Index(name = "idx_payout_status",      columnList = "status"),
+    @Index(name = "idx_payout_operator",    columnList = "operator_id"),
     @Index(name = "idx_payout_idempotency", columnList = "idempotency_key")
 })
 @Getter
@@ -20,10 +19,6 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class PayoutTransaction extends BaseEntity {
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "redemption_id", nullable = false, unique = true)
-    private GiftCardRedemption redemption;
 
     @Column(name = "merchant_id", nullable = false, length = 36)
     private String merchantId;
@@ -56,4 +51,8 @@ public class PayoutTransaction extends BaseEntity {
 
     @Column(name = "operator_transaction_id", length = 100)
     private String operatorTransactionId;
+
+    /** Cadoobi merchant fee charged on top of the declared payout amount. */
+    @Column(name = "merchant_fee_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal merchantFeeAmount = BigDecimal.ZERO;
 }
