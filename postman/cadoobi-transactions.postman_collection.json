@@ -1,20 +1,944 @@
 {
   "info": {
     "name": "Cadoobi Transactions API",
-    "description": "API collection for the Cadoobi Transactions service — covers Merchants, Operators, Payments, and Gift Cards.",
+    "description": "Complete API collection for the Cadoobi Transactions service — covers Auth, Users, Roles, Permissions, Merchants, Merchant Fees, Operators, Payments, and Gift Cards.\n\n**Getting started:**\n1. Run **Auth / Login** — the test script auto-saves `token`, `refreshToken`, and `userId`.\n2. All subsequent requests use the collection-level Bearer token automatically.\n3. Collection variables prefixed with `{{...}}` are auto-populated by test scripts.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
   "variable": [
-    { "key": "baseUrl",          "value": "http://localhost:8081", "type": "string" },
-    { "key": "merchantId",       "value": "",                      "type": "string" },
-    { "key": "merchantCode",     "value": "CADOOBI01",             "type": "string" },
-    { "key": "operatorId",       "value": "",                      "type": "string" },
-    { "key": "paymentReference", "value": "",                      "type": "string" },
-    { "key": "cardCode",         "value": "",                      "type": "string" }
+    { "key": "baseUrl",          "value": "http://localhost:8081/api/v1", "type": "string" },
+    { "key": "token",            "value": "",                             "type": "string" },
+    { "key": "refreshToken",     "value": "",                             "type": "string" },
+    { "key": "userId",           "value": "",                             "type": "string" },
+    { "key": "roleId",           "value": "",                             "type": "string" },
+    { "key": "permissionId",     "value": "",                             "type": "string" },
+    { "key": "merchantId",       "value": "",                             "type": "string" },
+    { "key": "merchantFeeId",    "value": "",                             "type": "string" },
+    { "key": "defaultFeeId",     "value": "",                             "type": "string" },
+    { "key": "merchantCode",     "value": "CADOOBI01",                   "type": "string" },
+    { "key": "operatorId",       "value": "",                             "type": "string" },
+    { "key": "paymentReference", "value": "",                             "type": "string" },
+    { "key": "cardCode",         "value": "",                             "type": "string" }
   ],
   "item": [
     {
+      "name": "Auth",
+      "description": "Authentication endpoints — login, token refresh, and logout. These requests do **not** require a Bearer token.",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('token',        json.data.token);",
+                  "    pm.collectionVariables.set('refreshToken', json.data.refreshToken);",
+                  "    pm.collectionVariables.set('userId',       json.data.userId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@cadoobi.sn\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticates a user and returns JWT tokens. The test script automatically saves `token`, `refreshToken`, and `userId` to collection variables."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"tokenType\": \"Bearer\",\n    \"expiresIn\": 86400000,\n    \"userId\": \"aa0e8400-e29b-41d4-a716-446655440001\",\n    \"email\": \"admin@cadoobi.sn\",\n    \"fullName\": \"Admin User\",\n    \"status\": \"ACTIVE\",\n    \"roles\": [\"ADMIN\"],\n    \"permissions\": [\"user:create\", \"user:read\", \"user:update\", \"user:delete\", \"role:read\", \"payment:create\"]\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "401 Unauthorized — bad credentials",
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 401,\n    \"type\": \"UNAUTHORIZED\",\n    \"message\": \"Invalid email or password\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/auth/login\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('token',        json.data.token);",
+                  "    pm.collectionVariables.set('refreshToken', json.data.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Issues a new access token using a valid refresh token. The test script updates `{{token}}` and `{{refreshToken}}`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Token refreshed successfully\",\n  \"data\": {\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.NEW...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.NEW...\",\n    \"tokenType\": \"Bearer\",\n    \"expiresIn\": 86400000,\n    \"userId\": \"aa0e8400-e29b-41d4-a716-446655440001\",\n    \"email\": \"admin@cadoobi.sn\",\n    \"fullName\": \"Admin User\",\n    \"status\": \"ACTIVE\",\n    \"roles\": [\"ADMIN\"],\n    \"permissions\": [\"user:create\", \"user:read\"]\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T13:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "401 Unauthorized — expired or invalid refresh token",
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 401,\n    \"type\": \"UNAUTHORIZED\",\n    \"message\": \"Invalid or expired refresh token\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T13:00:00Z\",\n  \"path\": \"/auth/refresh\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Logs out the current user. Token invalidation is handled client-side — delete `{{token}}` and `{{refreshToken}}` after calling this endpoint."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Logged out successfully\",\n  \"data\": null,\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "User management — CRUD, status management, and password operations.",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "search", "value": "admin",  "disabled": true, "description": "Search by name or email" },
+                { "key": "status", "value": "ACTIVE",  "disabled": true, "description": "PENDING | ACTIVE | SUSPENDED | INACTIVE | LOCKED" },
+                { "key": "page",   "value": "0",       "disabled": true },
+                { "key": "size",   "value": "20",      "disabled": true },
+                { "key": "sort",   "value": "createdAt,desc", "disabled": true }
+              ]
+            },
+            "description": "Returns a paginated list of users. Supports optional `search` (name/email) and `status` filters."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"2 user(s) found\",\n  \"data\": [\n    {\n      \"id\": \"aa0e8400-e29b-41d4-a716-446655440001\",\n      \"email\": \"admin@cadoobi.sn\",\n      \"fullName\": \"Admin User\",\n      \"phone\": \"+221770000001\",\n      \"status\": \"ACTIVE\",\n      \"emailVerified\": true,\n      \"failedLoginAttempts\": 0,\n      \"lastLoginAt\": \"2024-01-01T11:00:00Z\",\n      \"passwordChangedAt\": \"2024-01-01T00:00:00Z\",\n      \"roles\": [\n        {\n          \"id\": \"bb0e8400-e29b-41d4-a716-446655440001\",\n          \"code\": \"ADMIN\",\n          \"name\": \"Administrator\",\n          \"isActive\": true,\n          \"isSystemRole\": true\n        }\n      ],\n      \"createdAt\": \"2024-01-01T00:00:00Z\",\n      \"updatedAt\": \"2024-01-01T00:00:00Z\"\n    }\n  ],\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            },
+            "description": "Returns a single user by UUID."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User retrieved successfully\",\n  \"data\": {\n    \"id\": \"aa0e8400-e29b-41d4-a716-446655440001\",\n    \"email\": \"admin@cadoobi.sn\",\n    \"fullName\": \"Admin User\",\n    \"phone\": \"+221770000001\",\n    \"status\": \"ACTIVE\",\n    \"emailVerified\": true,\n    \"failedLoginAttempts\": 0,\n    \"lastLoginAt\": \"2024-01-01T11:00:00Z\",\n    \"passwordChangedAt\": \"2024-01-01T00:00:00Z\",\n    \"roles\": [\n      {\n        \"id\": \"bb0e8400-e29b-41d4-a716-446655440001\",\n        \"code\": \"ADMIN\",\n        \"name\": \"Administrator\",\n        \"isActive\": true,\n        \"isSystemRole\": true,\n        \"permissions\": []\n      }\n    ],\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 404,\n    \"type\": \"NOT_FOUND\",\n    \"message\": \"User not found with id: aa0e8400-e29b-41d4-a716-000000000099\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/users/aa0e8400-e29b-41d4-a716-000000000099\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User by Email",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/users/email/admin@cadoobi.sn",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "email", "admin@cadoobi.sn"]
+            },
+            "description": "Returns a single user by email address."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User retrieved successfully\",\n  \"data\": {\n    \"id\": \"aa0e8400-e29b-41d4-a716-446655440001\",\n    \"email\": \"admin@cadoobi.sn\",\n    \"fullName\": \"Admin User\",\n    \"status\": \"ACTIVE\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('userId', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@cadoobi.sn\",\n  \"password\": \"SecurePass123!\",\n  \"fullName\": \"John Doe\",\n  \"phone\": \"+221770000099\",\n  \"roleIds\": [\"{{roleId}}\"],\n  \"sendWelcomeEmail\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            },
+            "description": "Creates a new user and assigns at least one role. The test script saves the returned `id` to `{{userId}}`.\n\n`password` must be at least 8 characters. `roleIds` must contain at least one valid role UUID."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User created successfully\",\n  \"data\": {\n    \"id\": \"aa0e8400-e29b-41d4-a716-446655440099\",\n    \"email\": \"john.doe@cadoobi.sn\",\n    \"fullName\": \"John Doe\",\n    \"phone\": \"+221770000099\",\n    \"status\": \"PENDING\",\n    \"emailVerified\": false,\n    \"failedLoginAttempts\": 0,\n    \"roles\": [\n      { \"id\": \"bb0e8400-e29b-41d4-a716-446655440001\", \"code\": \"OPERATOR\", \"name\": \"Operator\" }\n    ],\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "409 Conflict — email already exists",
+              "status": "Conflict",
+              "code": 409,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 409,\n    \"type\": \"CONFLICT\",\n    \"message\": \"User with email john.doe@cadoobi.sn already exists\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/users\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 400,\n    \"type\": \"VALIDATION_ERROR\",\n    \"message\": \"Validation failed\",\n    \"details\": {\n      \"email\": \"Email must be valid\",\n      \"password\": \"Password must be at least 8 characters\",\n      \"roleIds\": \"At least one role is required\"\n    }\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/users\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@cadoobi.sn\",\n  \"fullName\": \"John Doe (updated)\",\n  \"phone\": \"+221770000099\",\n  \"status\": \"ACTIVE\",\n  \"roleIds\": [\"{{roleId}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            },
+            "description": "Updates user details and role assignments. `status` values: `PENDING | ACTIVE | SUSPENDED | INACTIVE | LOCKED`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User updated successfully\",\n  \"data\": {\n    \"id\": \"aa0e8400-e29b-41d4-a716-446655440099\",\n    \"email\": \"john.doe@cadoobi.sn\",\n    \"fullName\": \"John Doe (updated)\",\n    \"status\": \"ACTIVE\",\n    \"updatedAt\": \"2024-06-01T10:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            },
+            "description": "Permanently deletes a user."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User deleted successfully\",\n  \"data\": null,\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 404,\n    \"type\": \"NOT_FOUND\",\n    \"message\": \"User not found with id: aa0e8400-e29b-41d4-a716-000000000099\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/users/aa0e8400-e29b-41d4-a716-000000000099\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"OldPass123!\",\n  \"newPassword\": \"NewPass456!\",\n  \"confirmPassword\": \"NewPass456!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}", "change-password"]
+            },
+            "description": "Changes the password for a user. `newPassword` and `confirmPassword` must match."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Password changed successfully\",\n  \"data\": null,\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "400 Passwords do not match",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 400,\n    \"type\": \"VALIDATION_ERROR\",\n    \"message\": \"Passwords do not match\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/users/{{userId}}/change-password\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Activate User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}", "activate"]
+            },
+            "description": "Sets the user status to `ACTIVE`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User activated successfully\",\n  \"data\": {\n    \"id\": \"aa0e8400-e29b-41d4-a716-446655440099\",\n    \"status\": \"ACTIVE\",\n    \"updatedAt\": \"2024-01-01T12:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Suspend User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/suspend",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}", "suspend"]
+            },
+            "description": "Sets the user status to `SUSPENDED`. The user will no longer be able to log in."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User suspended successfully\",\n  \"data\": {\n    \"id\": \"aa0e8400-e29b-41d4-a716-446655440099\",\n    \"status\": \"SUSPENDED\",\n    \"updatedAt\": \"2024-01-01T12:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reset Failed Logins",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/reset-failed-logins",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}", "reset-failed-logins"]
+            },
+            "description": "Resets the `failedLoginAttempts` counter to 0. Use this to unlock a `LOCKED` user account."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Failed login attempts reset successfully\",\n  \"data\": null,\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "description": "Role management — CRUD and permission assignment.",
+      "item": [
+        {
+          "name": "Get All Roles",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles"],
+              "query": [
+                { "key": "search",     "value": "admin",  "disabled": true, "description": "Search by code or name" },
+                { "key": "activeOnly", "value": "true",   "disabled": true, "description": "Return only active roles" },
+                { "key": "page",       "value": "0",      "disabled": true },
+                { "key": "size",       "value": "20",     "disabled": true }
+              ]
+            },
+            "description": "Returns a paginated list of roles. Use `activeOnly=true` to filter inactive roles."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"3 role(s) found\",\n  \"data\": [\n    {\n      \"id\": \"bb0e8400-e29b-41d4-a716-446655440001\",\n      \"code\": \"ADMIN\",\n      \"name\": \"Administrator\",\n      \"description\": \"Full system access\",\n      \"isActive\": true,\n      \"isSystemRole\": true,\n      \"permissions\": [],\n      \"userCount\": 1,\n      \"createdAt\": \"2024-01-01T00:00:00Z\",\n      \"updatedAt\": \"2024-01-01T00:00:00Z\"\n    },\n    {\n      \"id\": \"bb0e8400-e29b-41d4-a716-446655440002\",\n      \"code\": \"OPERATOR\",\n      \"name\": \"Operator\",\n      \"description\": \"Manages payments and operators\",\n      \"isActive\": true,\n      \"isSystemRole\": false,\n      \"permissions\": [],\n      \"userCount\": 3,\n      \"createdAt\": \"2024-01-01T00:00:00Z\",\n      \"updatedAt\": \"2024-01-01T00:00:00Z\"\n    }\n  ],\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Role by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{roleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "{{roleId}}"]
+            },
+            "description": "Returns a single role by UUID, including its full list of permissions."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Role retrieved successfully\",\n  \"data\": {\n    \"id\": \"bb0e8400-e29b-41d4-a716-446655440001\",\n    \"code\": \"ADMIN\",\n    \"name\": \"Administrator\",\n    \"description\": \"Full system access\",\n    \"isActive\": true,\n    \"isSystemRole\": true,\n    \"permissions\": [\n      { \"id\": \"cc0e8400-e29b-41d4-a716-446655440001\", \"code\": \"user:create\", \"name\": \"Create User\", \"resource\": \"user\", \"action\": \"create\", \"isActive\": true }\n    ],\n    \"userCount\": 1,\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 404,\n    \"type\": \"NOT_FOUND\",\n    \"message\": \"Role not found\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/roles/bb0e8400-e29b-41d4-a716-000000000099\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Role by Code",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/roles/code/ADMIN",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "code", "ADMIN"]
+            },
+            "description": "Returns a single role by its code (e.g. `ADMIN`, `OPERATOR`)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Role retrieved successfully\",\n  \"data\": {\n    \"id\": \"bb0e8400-e29b-41d4-a716-446655440001\",\n    \"code\": \"ADMIN\",\n    \"name\": \"Administrator\",\n    \"isActive\": true,\n    \"isSystemRole\": true\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('roleId', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"MERCHANT_MANAGER\",\n  \"name\": \"Merchant Manager\",\n  \"description\": \"Can create and manage merchants\",\n  \"permissionIds\": [\"{{permissionId}}\"],\n  \"isActive\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles"]
+            },
+            "description": "Creates a new role. `code` must be uppercase with underscores only (e.g. `MERCHANT_MANAGER`). The test script saves the returned `id` to `{{roleId}}`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Role created successfully\",\n  \"data\": {\n    \"id\": \"bb0e8400-e29b-41d4-a716-446655440099\",\n    \"code\": \"MERCHANT_MANAGER\",\n    \"name\": \"Merchant Manager\",\n    \"description\": \"Can create and manage merchants\",\n    \"isActive\": true,\n    \"isSystemRole\": false,\n    \"permissions\": [],\n    \"userCount\": 0,\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "409 Conflict — duplicate code",
+              "status": "Conflict",
+              "code": 409,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 409,\n    \"type\": \"CONFLICT\",\n    \"message\": \"Role with code MERCHANT_MANAGER already exists\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/roles\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Merchant Manager (updated)\",\n  \"description\": \"Updated description\",\n  \"permissionIds\": [\"{{permissionId}}\"],\n  \"isActive\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{roleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "{{roleId}}"]
+            },
+            "description": "Updates a role's name, description, permissions, and active status. The `code` field cannot be changed after creation."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Role updated successfully\",\n  \"data\": {\n    \"id\": \"bb0e8400-e29b-41d4-a716-446655440099\",\n    \"code\": \"MERCHANT_MANAGER\",\n    \"name\": \"Merchant Manager (updated)\",\n    \"isActive\": true,\n    \"updatedAt\": \"2024-06-01T10:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Role",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{roleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "{{roleId}}"]
+            },
+            "description": "Deletes a role. System roles (`isSystemRole: true`) cannot be deleted."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Role deleted successfully\",\n  \"data\": null,\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "400 Cannot delete system role",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 400,\n    \"type\": \"BAD_REQUEST\",\n    \"message\": \"Cannot delete a system role\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/roles/bb0e8400-e29b-41d4-a716-446655440001\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Add Permissions to Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\"{{permissionId}}\", \"cc0e8400-e29b-41d4-a716-446655440002\"]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{roleId}}/permissions",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "{{roleId}}", "permissions"]
+            },
+            "description": "Adds a list of permission UUIDs to the role. Permissions already assigned are silently ignored."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Permissions added to role successfully\",\n  \"data\": {\n    \"id\": \"bb0e8400-e29b-41d4-a716-446655440099\",\n    \"code\": \"MERCHANT_MANAGER\",\n    \"permissions\": [\n      { \"id\": \"cc0e8400-e29b-41d4-a716-446655440001\", \"code\": \"merchant:create\", \"resource\": \"merchant\", \"action\": \"create\" },\n      { \"id\": \"cc0e8400-e29b-41d4-a716-446655440002\", \"code\": \"merchant:read\",   \"resource\": \"merchant\", \"action\": \"read\" }\n    ]\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Remove Permissions from Role",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\"{{permissionId}}\"]",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{roleId}}/permissions",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "{{roleId}}", "permissions"]
+            },
+            "description": "Removes a list of permission UUIDs from the role."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Permissions removed from role successfully\",\n  \"data\": {\n    \"id\": \"bb0e8400-e29b-41d4-a716-446655440099\",\n    \"code\": \"MERCHANT_MANAGER\",\n    \"permissions\": []\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Permissions",
+      "description": "Permission management — CRUD and lookup by resource.",
+      "item": [
+        {
+          "name": "Get All Permissions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/permissions",
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions"],
+              "query": [
+                { "key": "search",     "value": "user",  "disabled": true, "description": "Search by code or name" },
+                { "key": "activeOnly", "value": "true",  "disabled": true },
+                { "key": "page",       "value": "0",     "disabled": true },
+                { "key": "size",       "value": "20",    "disabled": true }
+              ]
+            },
+            "description": "Returns a paginated list of all permissions."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"4 permission(s) found\",\n  \"data\": [\n    {\n      \"id\": \"cc0e8400-e29b-41d4-a716-446655440001\",\n      \"code\": \"user:create\",\n      \"name\": \"Create User\",\n      \"description\": \"Allows creating new users\",\n      \"resource\": \"user\",\n      \"action\": \"create\",\n      \"isActive\": true,\n      \"createdAt\": \"2024-01-01T00:00:00Z\",\n      \"updatedAt\": \"2024-01-01T00:00:00Z\"\n    },\n    {\n      \"id\": \"cc0e8400-e29b-41d4-a716-446655440002\",\n      \"code\": \"user:read\",\n      \"name\": \"Read User\",\n      \"description\": \"Allows reading user data\",\n      \"resource\": \"user\",\n      \"action\": \"read\",\n      \"isActive\": true,\n      \"createdAt\": \"2024-01-01T00:00:00Z\",\n      \"updatedAt\": \"2024-01-01T00:00:00Z\"\n    }\n  ],\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Permission by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/permissions/{{permissionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions", "{{permissionId}}"]
+            },
+            "description": "Returns a single permission by UUID."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Permission retrieved successfully\",\n  \"data\": {\n    \"id\": \"cc0e8400-e29b-41d4-a716-446655440001\",\n    \"code\": \"user:create\",\n    \"name\": \"Create User\",\n    \"description\": \"Allows creating new users\",\n    \"resource\": \"user\",\n    \"action\": \"create\",\n    \"isActive\": true,\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 404,\n    \"type\": \"NOT_FOUND\",\n    \"message\": \"Permission not found\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/permissions/cc0e8400-e29b-41d4-a716-000000000099\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Permission by Code",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/permissions/code/user:create",
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions", "code", "user:create"]
+            },
+            "description": "Returns a single permission by its code (format: `resource:action`, e.g. `user:create`, `payment:read`)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Permission retrieved successfully\",\n  \"data\": {\n    \"id\": \"cc0e8400-e29b-41d4-a716-446655440001\",\n    \"code\": \"user:create\",\n    \"name\": \"Create User\",\n    \"resource\": \"user\",\n    \"action\": \"create\",\n    \"isActive\": true\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Permissions by Resource",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/permissions/resource/user",
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions", "resource", "user"],
+              "query": [
+                { "key": "page", "value": "0",  "disabled": true },
+                { "key": "size", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "Returns all permissions for a given resource (e.g. `user`, `merchant`, `payment`, `role`, `operator`)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"4 permission(s) found for resource: user\",\n  \"data\": [\n    { \"id\": \"cc0e8400-e29b-41d4-a716-446655440001\", \"code\": \"user:create\", \"resource\": \"user\", \"action\": \"create\" },\n    { \"id\": \"cc0e8400-e29b-41d4-a716-446655440002\", \"code\": \"user:read\",   \"resource\": \"user\", \"action\": \"read\" },\n    { \"id\": \"cc0e8400-e29b-41d4-a716-446655440003\", \"code\": \"user:update\", \"resource\": \"user\", \"action\": \"update\" },\n    { \"id\": \"cc0e8400-e29b-41d4-a716-446655440004\", \"code\": \"user:delete\", \"resource\": \"user\", \"action\": \"delete\" }\n  ],\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Permission",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('permissionId', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"merchant:create\",\n  \"name\": \"Create Merchant\",\n  \"description\": \"Allows creating a new merchant\",\n  \"resource\": \"merchant\",\n  \"action\": \"create\",\n  \"isActive\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/permissions",
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions"]
+            },
+            "description": "Creates a new permission. `code` must follow the `resource:action` format in lowercase (e.g. `payment:create`). The test script saves the returned `id` to `{{permissionId}}`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Permission created successfully\",\n  \"data\": {\n    \"id\": \"cc0e8400-e29b-41d4-a716-446655440099\",\n    \"code\": \"merchant:create\",\n    \"name\": \"Create Merchant\",\n    \"description\": \"Allows creating a new merchant\",\n    \"resource\": \"merchant\",\n    \"action\": \"create\",\n    \"isActive\": true,\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "409 Conflict — duplicate code",
+              "status": "Conflict",
+              "code": 409,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 409,\n    \"type\": \"CONFLICT\",\n    \"message\": \"Permission with code merchant:create already exists\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/permissions\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Permission",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept",       "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"merchant:create\",\n  \"name\": \"Create Merchant (updated)\",\n  \"description\": \"Updated description\",\n  \"resource\": \"merchant\",\n  \"action\": \"create\",\n  \"isActive\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/permissions/{{permissionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions", "{{permissionId}}"]
+            },
+            "description": "Updates a permission's details. Note: changing `code`, `resource`, or `action` may affect roles that depend on this permission."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Permission updated successfully\",\n  \"data\": {\n    \"id\": \"cc0e8400-e29b-41d4-a716-446655440099\",\n    \"code\": \"merchant:create\",\n    \"name\": \"Create Merchant (updated)\",\n    \"resource\": \"merchant\",\n    \"action\": \"create\",\n    \"isActive\": true,\n    \"updatedAt\": \"2024-06-01T10:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Permission",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/permissions/{{permissionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions", "{{permissionId}}"]
+            },
+            "description": "Permanently deletes a permission. This will also remove it from any roles that currently have it."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Permission deleted successfully\",\n  \"data\": null,\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Merchants",
+      "description": "Merchant management — onboarding, status updates, and user assignment.",
       "item": [
         {
           "name": "Get All Merchants",
@@ -26,10 +950,12 @@
               "host": ["{{baseUrl}}"],
               "path": ["merchants"],
               "query": [
-                { "key": "status", "value": "ACTIVE", "disabled": true, "description": "Filter by status: PENDING | ACTIVE | SUSPENDED | BLOCKED" }
+                { "key": "status", "value": "ACTIVE", "disabled": true, "description": "Filter by status: PENDING | ACTIVE | SUSPENDED | BLOCKED" },
+                { "key": "page",   "value": "0",      "disabled": true },
+                { "key": "size",   "value": "20",     "disabled": true }
               ]
             },
-            "description": "Returns all merchants. Optionally filter by `status` query param."
+            "description": "Returns all merchants. Optionally filter by `status`."
           },
           "response": [
             {
@@ -37,7 +963,7 @@
               "status": "OK",
               "code": 200,
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"success\": true,\n  \"message\": \"1 merchant(s) found\",\n  \"data\": [\n    {\n      \"id\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n      \"code\": \"CADOOBI01\",\n      \"name\": \"Cadoobi Store\",\n      \"logoUrl\": null,\n      \"phone\": \"+221770000001\",\n      \"businessType\": \"E-commerce\",\n      \"email\": \"store@cadoobi.sn\",\n      \"address\": \"Dakar, Sénégal\",\n      \"country\": \"SN\",\n      \"rccm\": \"SN-DKR-2024-B-12345\",\n      \"ninea\": \"12345678 2A3\",\n      \"ownerFullName\": \"Mamadou Diallo\",\n      \"ownerEmail\": \"owner@cadoobi.sn\",\n      \"ownerPhone\": \"+221770000002\",\n      \"ownerCni\": \"1 2345 67890 12345\",\n      \"compensationAccount\": {\n        \"type\": \"BANK\",\n        \"bankName\": \"Ecobank Sénégal\",\n        \"accountNumber\": \"SN1234567890\",\n        \"accountHolder\": \"Cadoobi Store\",\n        \"iban\": \"SN08SN0100152000048500003035\",\n        \"swift\": \"ECOCSNDA\",\n        \"operatorCode\": null,\n        \"operatorPhone\": null,\n        \"operatorHolderName\": null\n      },\n      \"symmetryMerchantId\": null,\n      \"agencyCode\": null,\n      \"status\": \"PENDING\",\n      \"createdAt\": \"2024-01-01T00:00:00Z\",\n      \"updatedAt\": \"2024-01-01T00:00:00Z\"\n    }\n  ],\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"1 merchant(s) found\",\n  \"data\": [\n    {\n      \"id\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n      \"code\": \"CADOOBI01\",\n      \"name\": \"Cadoobi Store\",\n      \"phone\": \"+221770000001\",\n      \"email\": \"store@cadoobi.sn\",\n      \"country\": \"SN\",\n      \"status\": \"PENDING\",\n      \"userId\": \"aa0e8400-e29b-41d4-a716-446655440001\",\n      \"userFullName\": \"Admin User\",\n      \"userEmail\": \"admin@cadoobi.sn\",\n      \"createdAt\": \"2024-01-01T00:00:00Z\",\n      \"updatedAt\": \"2024-01-01T00:00:00Z\"\n    }\n  ],\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
             }
           ]
         },
@@ -59,7 +985,7 @@
               "status": "OK",
               "code": 200,
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Merchant retrieved successfully\",\n  \"data\": {\n    \"id\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"code\": \"CADOOBI01\",\n    \"name\": \"Cadoobi Store\",\n    \"logoUrl\": null,\n    \"phone\": \"+221770000001\",\n    \"businessType\": \"E-commerce\",\n    \"email\": \"store@cadoobi.sn\",\n    \"address\": \"Dakar, Sénégal\",\n    \"country\": \"SN\",\n    \"rccm\": \"SN-DKR-2024-B-12345\",\n    \"ninea\": \"12345678 2A3\",\n    \"ownerFullName\": \"Mamadou Diallo\",\n    \"ownerEmail\": \"owner@cadoobi.sn\",\n    \"ownerPhone\": \"+221770000002\",\n    \"ownerCni\": \"1 2345 67890 12345\",\n    \"compensationAccount\": {\n      \"type\": \"BANK\",\n      \"bankName\": \"Ecobank Sénégal\",\n      \"accountNumber\": \"SN1234567890\",\n      \"accountHolder\": \"Cadoobi Store\",\n      \"iban\": \"SN08SN0100152000048500003035\",\n      \"swift\": \"ECOCSNDA\",\n      \"operatorCode\": null,\n      \"operatorPhone\": null,\n      \"operatorHolderName\": null\n    },\n    \"symmetryMerchantId\": null,\n    \"agencyCode\": null,\n    \"status\": \"ACTIVE\",\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Merchant retrieved successfully\",\n  \"data\": {\n    \"id\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"code\": \"CADOOBI01\",\n    \"name\": \"Cadoobi Store\",\n    \"logoUrl\": null,\n    \"phone\": \"+221770000001\",\n    \"businessType\": \"E-commerce\",\n    \"email\": \"store@cadoobi.sn\",\n    \"address\": \"Dakar, Sénégal\",\n    \"country\": \"SN\",\n    \"rccm\": \"SN-DKR-2024-B-12345\",\n    \"ninea\": \"12345678 2A3\",\n    \"ownerFullName\": \"Mamadou Diallo\",\n    \"ownerEmail\": \"owner@cadoobi.sn\",\n    \"ownerPhone\": \"+221770000002\",\n    \"ownerCni\": \"1 2345 67890 12345\",\n    \"compensationAccount\": {\n      \"type\": \"BANK\",\n      \"bankName\": \"Ecobank Sénégal\",\n      \"accountNumber\": \"SN1234567890\",\n      \"accountHolder\": \"Cadoobi Store\",\n      \"iban\": \"SN08SN0100152000048500003035\",\n      \"swift\": \"ECOCSNDA\",\n      \"operatorCode\": null,\n      \"operatorPhone\": null,\n      \"operatorHolderName\": null\n    },\n    \"symmetryMerchantId\": null,\n    \"agencyCode\": null,\n    \"status\": \"ACTIVE\",\n    \"userId\": \"aa0e8400-e29b-41d4-a716-446655440001\",\n    \"userFullName\": \"Admin User\",\n    \"userEmail\": \"admin@cadoobi.sn\",\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
             },
             {
               "name": "404 Not Found",
@@ -93,6 +1019,32 @@
           ]
         },
         {
+          "name": "Get Merchants by User",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/merchants/user/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["merchants", "user", "{{userId}}"],
+              "query": [
+                { "key": "page", "value": "0",  "disabled": true },
+                { "key": "size", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "Returns all merchants managed by a given user UUID."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"1 merchant(s) found for user\",\n  \"data\": [\n    { \"id\": \"aa0e8400-e29b-41d4-a716-446655440000\", \"code\": \"CADOOBI01\", \"name\": \"Cadoobi Store\", \"status\": \"ACTIVE\" }\n  ],\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
           "name": "Create Merchant",
           "event": [
             {
@@ -117,7 +1069,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"CADOOBI01\",\n  \"name\": \"Cadoobi Store\",\n  \"phone\": \"+221770000001\",\n  \"businessType\": \"E-commerce\",\n  \"email\": \"store@cadoobi.sn\",\n  \"address\": \"Dakar, Sénégal\",\n  \"country\": \"SN\",\n  \"rccm\": \"SN-DKR-2024-B-12345\",\n  \"ninea\": \"12345678 2A3\",\n  \"ownerFullName\": \"Mamadou Diallo\",\n  \"ownerEmail\": \"owner@cadoobi.sn\",\n  \"ownerPhone\": \"+221770000002\",\n  \"ownerCni\": \"1 2345 67890 12345\",\n  \"compensationAccount\": {\n    \"type\": \"BANK\",\n    \"bankName\": \"Ecobank Sénégal\",\n    \"accountNumber\": \"SN1234567890\",\n    \"accountHolder\": \"Cadoobi Store\",\n    \"iban\": \"SN08SN0100152000048500003035\",\n    \"swift\": \"ECOCSNDA\"\n  }\n}",
+              "raw": "{\n  \"code\": \"CADOOBI01\",\n  \"name\": \"Cadoobi Store\",\n  \"phone\": \"+221770000001\",\n  \"businessType\": \"E-commerce\",\n  \"email\": \"store@cadoobi.sn\",\n  \"address\": \"Dakar, Sénégal\",\n  \"country\": \"SN\",\n  \"rccm\": \"SN-DKR-2024-B-12345\",\n  \"ninea\": \"12345678 2A3\",\n  \"ownerFullName\": \"Mamadou Diallo\",\n  \"ownerEmail\": \"owner@cadoobi.sn\",\n  \"ownerPhone\": \"+221770000002\",\n  \"ownerCni\": \"1 2345 67890 12345\",\n  \"userId\": \"{{userId}}\",\n  \"compensationAccount\": {\n    \"type\": \"BANK\",\n    \"bankName\": \"Ecobank Sénégal\",\n    \"accountNumber\": \"SN1234567890\",\n    \"accountHolder\": \"Cadoobi Store\",\n    \"iban\": \"SN08SN0100152000048500003035\",\n    \"swift\": \"ECOCSNDA\"\n  }\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -125,7 +1077,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["merchants"]
             },
-            "description": "Creates a new merchant. Status defaults to `PENDING`. The auto-test saves `id` into `{{merchantId}}` and `code` into `{{merchantCode}}`.\n\n**compensationAccount.type** must be `BANK` or `OPERATOR`.\n- For `BANK`: fill `bankName`, `accountNumber`, `accountHolder`, `iban`, `swift`.\n- For `OPERATOR`: fill `operatorCode` (must match an existing operator: WAVE, OM, FREE), `operatorPhone`, `operatorHolderName`. `operatorName` is read-only (returned in responses)."
+            "description": "Creates a new merchant. Status defaults to `PENDING`. The auto-test saves `id` and `code` to collection variables.\n\n`userId` is required and must reference an existing user.\n\n**compensationAccount.type** must be `BANK` or `OPERATOR`.\n- For `BANK`: fill `bankName`, `accountNumber`, `accountHolder`, `iban`, `swift`.\n- For `OPERATOR`: fill `operatorCode` (e.g. `WAVE`, `OM`, `FREE`), `operatorPhone`, `operatorHolderName`."
           },
           "response": [
             {
@@ -133,7 +1085,7 @@
               "status": "Created",
               "code": 201,
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Merchant created successfully\",\n  \"data\": {\n    \"id\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"code\": \"CADOOBI01\",\n    \"name\": \"Cadoobi Store\",\n    \"logoUrl\": null,\n    \"phone\": \"+221770000001\",\n    \"businessType\": \"E-commerce\",\n    \"email\": \"store@cadoobi.sn\",\n    \"address\": \"Dakar, Sénégal\",\n    \"country\": \"SN\",\n    \"rccm\": \"SN-DKR-2024-B-12345\",\n    \"ninea\": \"12345678 2A3\",\n    \"ownerFullName\": \"Mamadou Diallo\",\n    \"ownerEmail\": \"owner@cadoobi.sn\",\n    \"ownerPhone\": \"+221770000002\",\n    \"ownerCni\": \"1 2345 67890 12345\",\n    \"compensationAccount\": {\n      \"type\": \"BANK\",\n      \"bankName\": \"Ecobank Sénégal\",\n      \"accountNumber\": \"SN1234567890\",\n      \"accountHolder\": \"Cadoobi Store\",\n      \"iban\": \"SN08SN0100152000048500003035\",\n      \"swift\": \"ECOCSNDA\",\n      \"operatorCode\": null,\n      \"operatorPhone\": null,\n      \"operatorHolderName\": null\n    },\n    \"symmetryMerchantId\": null,\n    \"agencyCode\": null,\n    \"status\": \"PENDING\",\n    \"createdAt\": \"2024-01-01T00:00:00Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Merchant created successfully\",\n  \"data\": {\n    \"id\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"code\": \"CADOOBI01\",\n    \"name\": \"Cadoobi Store\",\n    \"status\": \"PENDING\",\n    \"userId\": \"aa0e8400-e29b-41d4-a716-446655440001\",\n    \"createdAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
             },
             {
               "name": "409 Conflict — duplicate code",
@@ -147,7 +1099,7 @@
               "status": "Bad Request",
               "code": 400,
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 400,\n    \"type\": \"VALIDATION_ERROR\",\n    \"message\": \"Validation failed\",\n    \"details\": {\n      \"code\": \"Code is required\",\n      \"email\": \"Email must be valid\",\n      \"country\": \"Country must be a 2-character ISO code\"\n    }\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/merchants\"\n}"
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 400,\n    \"type\": \"VALIDATION_ERROR\",\n    \"message\": \"Validation failed\",\n    \"details\": {\n      \"code\": \"Code is required\",\n      \"email\": \"Email must be valid\",\n      \"country\": \"Country must be a 2-character ISO code\",\n      \"userId\": \"Managing user is required\"\n    }\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/merchants\"\n}"
             }
           ]
         },
@@ -161,7 +1113,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Cadoobi Store (updated)\",\n  \"phone\": \"+221770000001\",\n  \"businessType\": \"E-commerce\",\n  \"email\": \"store@cadoobi.sn\",\n  \"address\": \"Plateau, Dakar, Sénégal\",\n  \"country\": \"SN\",\n  \"rccm\": \"SN-DKR-2024-B-12345\",\n  \"ninea\": \"12345678 2A3\",\n  \"ownerFullName\": \"Mamadou Diallo\",\n  \"ownerEmail\": \"owner@cadoobi.sn\",\n  \"ownerPhone\": \"+221770000002\",\n  \"ownerCni\": \"1 2345 67890 12345\",\n  \"compensationAccount\": {\n    \"bankName\": \"Ecobank Sénégal\",\n    \"accountNumber\": \"SN1234567890\",\n    \"accountHolder\": \"Cadoobi Store\",\n    \"iban\": \"SN08SN0100152000048500003035\",\n    \"swift\": \"ECOCSNDA\"\n  },\n  \"status\": \"ACTIVE\"\n}",
+              "raw": "{\n  \"name\": \"Cadoobi Store (updated)\",\n  \"phone\": \"+221770000001\",\n  \"businessType\": \"E-commerce\",\n  \"email\": \"store@cadoobi.sn\",\n  \"address\": \"Plateau, Dakar, Sénégal\",\n  \"country\": \"SN\",\n  \"rccm\": \"SN-DKR-2024-B-12345\",\n  \"ninea\": \"12345678 2A3\",\n  \"ownerFullName\": \"Mamadou Diallo\",\n  \"ownerEmail\": \"owner@cadoobi.sn\",\n  \"ownerPhone\": \"+221770000002\",\n  \"ownerCni\": \"1 2345 67890 12345\",\n  \"userId\": \"{{userId}}\",\n  \"compensationAccount\": {\n    \"type\": \"BANK\",\n    \"bankName\": \"Ecobank Sénégal\",\n    \"accountNumber\": \"SN1234567890\",\n    \"accountHolder\": \"Cadoobi Store\",\n    \"iban\": \"SN08SN0100152000048500003035\",\n    \"swift\": \"ECOCSNDA\"\n  },\n  \"status\": \"ACTIVE\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -169,7 +1121,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["merchants", "{{merchantId}}"]
             },
-            "description": "Full update of a merchant. You can also change `status` (PENDING | ACTIVE | SUSPENDED | BLOCKED)."
+            "description": "Full update of a merchant. You can change `status` (PENDING | ACTIVE | SUSPENDED | BLOCKED) and reassign the managing `userId`."
           },
           "response": [
             {
@@ -213,7 +1165,269 @@
       ]
     },
     {
+      "name": "Merchant Fees",
+      "description": "Merchant-specific fee configurations and system-wide default fee templates.\n\n- **Default fees** (`/merchants/fees/defaults`) are templates copied automatically to every new merchant at creation.\n- **Merchant fees** (`/merchants/{id}/fees`) are the actual fee records per merchant (editable individually after creation).",
+      "item": [
+        {
+          "name": "Default Fees",
+          "description": "System-wide default fee templates. All active defaults are applied to every new merchant when it is created.",
+          "item": [
+            {
+              "name": "Get All Default Fees",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept", "value": "application/json" }],
+                "url": {
+                  "raw": "{{baseUrl}}/merchants/fees/defaults",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["merchants", "fees", "defaults"]
+                },
+                "description": "Returns all default fee templates (both active and inactive)."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"success\": true,\n  \"message\": \"1 default fee(s) found\",\n  \"data\": [\n    {\n      \"id\": \"dd0e8400-e29b-41d4-a716-446655440001\",\n      \"description\": \"Default payout fee (2%)\",\n      \"feeType\": \"PERCENTAGE\",\n      \"feePercentage\": 0.0200,\n      \"feeFixed\": null,\n      \"minAmount\": 0,\n      \"maxAmount\": null,\n      \"currency\": \"XOF\",\n      \"isActive\": true,\n      \"effectiveTo\": null\n    }\n  ],\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+                }
+              ]
+            },
+            {
+              "name": "Create Default Fee",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const json = pm.response.json();",
+                      "    pm.collectionVariables.set('defaultFeeId', json.data.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Accept",       "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"description\": \"Default payout fee (2%)\",\n  \"feeType\": \"PERCENTAGE\",\n  \"feePercentage\": 0.0200,\n  \"feeFixed\": null,\n  \"minAmount\": 0,\n  \"maxAmount\": null,\n  \"currency\": \"XOF\",\n  \"isActive\": true,\n  \"effectiveTo\": null\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/merchants/fees/defaults",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["merchants", "fees", "defaults"]
+                },
+                "description": "Creates a new default fee template. All active defaults are automatically copied to each new merchant at creation time.\n\n`feeType` values: `PERCENTAGE` | `FIXED` | `MIXED`\n- For `PERCENTAGE` or `MIXED`: `feePercentage` (0.0–1.0) is required.\n- For `FIXED` or `MIXED`: `feeFixed` is required.\n\nThe test script saves the returned `id` to `{{defaultFeeId}}`."
+              },
+              "response": [
+                {
+                  "name": "201 Created",
+                  "status": "Created",
+                  "code": 201,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"success\": true,\n  \"message\": \"Default merchant fee created successfully\",\n  \"data\": {\n    \"id\": \"dd0e8400-e29b-41d4-a716-446655440001\",\n    \"description\": \"Default payout fee (2%)\",\n    \"feeType\": \"PERCENTAGE\",\n    \"feePercentage\": 0.0200,\n    \"feeFixed\": null,\n    \"minAmount\": 0,\n    \"maxAmount\": null,\n    \"currency\": \"XOF\",\n    \"isActive\": true,\n    \"effectiveTo\": null\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+                },
+                {
+                  "name": "400 Validation Error",
+                  "status": "Bad Request",
+                  "code": 400,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 400,\n    \"type\": \"VALIDATION_ERROR\",\n    \"message\": \"Fee percentage is required for PERCENTAGE or MIXED fee type\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/merchants/fees/defaults\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Update Default Fee",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Accept",       "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"description\": \"Default payout fee (1.5%)\",\n  \"feeType\": \"PERCENTAGE\",\n  \"feePercentage\": 0.0150,\n  \"feeFixed\": null,\n  \"minAmount\": 0,\n  \"maxAmount\": null,\n  \"currency\": \"XOF\",\n  \"isActive\": true,\n  \"effectiveTo\": null\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/merchants/fees/defaults/{{defaultFeeId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["merchants", "fees", "defaults", "{{defaultFeeId}}"]
+                },
+                "description": "Updates an existing default fee template. Note: changes here do **not** retroactively update fees already applied to existing merchants."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"success\": true,\n  \"message\": \"Default merchant fee updated successfully\",\n  \"data\": {\n    \"id\": \"dd0e8400-e29b-41d4-a716-446655440001\",\n    \"description\": \"Default payout fee (1.5%)\",\n    \"feeType\": \"PERCENTAGE\",\n    \"feePercentage\": 0.0150,\n    \"isActive\": true\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:00:00Z\",\n  \"path\": null\n}"
+                }
+              ]
+            },
+            {
+              "name": "Delete Default Fee",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Accept", "value": "application/json" }],
+                "url": {
+                  "raw": "{{baseUrl}}/merchants/fees/defaults/{{defaultFeeId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["merchants", "fees", "defaults", "{{defaultFeeId}}"]
+                },
+                "description": "Removes a default fee template. Already-created merchants are **not** affected."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"success\": true,\n  \"message\": \"Default merchant fee deleted successfully\",\n  \"data\": null,\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Merchant-Specific Fees",
+          "description": "Fee configurations for a specific merchant. These are auto-populated from active default fees at creation and can be customised individually.",
+          "item": [
+            {
+              "name": "Get Merchant Fees",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept", "value": "application/json" }],
+                "url": {
+                  "raw": "{{baseUrl}}/merchants/{{merchantId}}/fees",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["merchants", "{{merchantId}}", "fees"]
+                },
+                "description": "Returns all fee configurations for a specific merchant."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"success\": true,\n  \"message\": \"1 fee configuration(s) found\",\n  \"data\": [\n    {\n      \"id\": \"ee0e8400-e29b-41d4-a716-446655440001\",\n      \"merchantId\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n      \"feeType\": \"PERCENTAGE\",\n      \"feePercentage\": 0.0200,\n      \"feeFixed\": null,\n      \"minAmount\": 0,\n      \"maxAmount\": null,\n      \"currency\": \"XOF\",\n      \"isActive\": true,\n      \"effectiveFrom\": \"2024-01-01\",\n      \"effectiveTo\": null\n    }\n  ],\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+                }
+              ]
+            },
+            {
+              "name": "Create Merchant Fee",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const json = pm.response.json();",
+                      "    pm.collectionVariables.set('merchantFeeId', json.data.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Accept",       "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"feeType\": \"MIXED\",\n  \"feePercentage\": 0.0150,\n  \"feeFixed\": 50,\n  \"minAmount\": 1000,\n  \"maxAmount\": 500000,\n  \"currency\": \"XOF\",\n  \"isActive\": true,\n  \"effectiveFrom\": \"2024-06-01\",\n  \"effectiveTo\": null\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/merchants/{{merchantId}}/fees",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["merchants", "{{merchantId}}", "fees"]
+                },
+                "description": "Adds a custom payout fee configuration to a specific merchant. The test script saves the returned `id` to `{{merchantFeeId}}`.\n\n`feeType`: `PERCENTAGE` | `FIXED` | `MIXED`\n- `PERCENTAGE`: requires `feePercentage` (0.0–1.0)\n- `FIXED`: requires `feeFixed`\n- `MIXED`: requires both"
+              },
+              "response": [
+                {
+                  "name": "201 Created",
+                  "status": "Created",
+                  "code": 201,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"success\": true,\n  \"message\": \"Merchant fee created successfully\",\n  \"data\": {\n    \"id\": \"ee0e8400-e29b-41d4-a716-446655440099\",\n    \"merchantId\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"feeType\": \"MIXED\",\n    \"feePercentage\": 0.0150,\n    \"feeFixed\": 50,\n    \"minAmount\": 1000,\n    \"maxAmount\": 500000,\n    \"currency\": \"XOF\",\n    \"isActive\": true,\n    \"effectiveFrom\": \"2024-06-01\",\n    \"effectiveTo\": null\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+                }
+              ]
+            },
+            {
+              "name": "Update Merchant Fee",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Accept",       "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"feeType\": \"PERCENTAGE\",\n  \"feePercentage\": 0.0100,\n  \"feeFixed\": null,\n  \"minAmount\": 0,\n  \"maxAmount\": null,\n  \"currency\": \"XOF\",\n  \"isActive\": true,\n  \"effectiveFrom\": \"2024-06-01\",\n  \"effectiveTo\": null\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/merchants/{{merchantId}}/fees/{{merchantFeeId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["merchants", "{{merchantId}}", "fees", "{{merchantFeeId}}"]
+                },
+                "description": "Updates a specific fee configuration for a merchant."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"success\": true,\n  \"message\": \"Merchant fee updated successfully\",\n  \"data\": {\n    \"id\": \"ee0e8400-e29b-41d4-a716-446655440099\",\n    \"merchantId\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"feeType\": \"PERCENTAGE\",\n    \"feePercentage\": 0.0100,\n    \"isActive\": true,\n    \"effectiveFrom\": \"2024-06-01\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:00:00Z\",\n  \"path\": null\n}"
+                }
+              ]
+            },
+            {
+              "name": "Delete Merchant Fee",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Accept", "value": "application/json" }],
+                "url": {
+                  "raw": "{{baseUrl}}/merchants/{{merchantId}}/fees/{{merchantFeeId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["merchants", "{{merchantId}}", "fees", "{{merchantFeeId}}"]
+                },
+                "description": "Removes a fee configuration from a merchant."
+              },
+              "response": [
+                {
+                  "name": "200 OK",
+                  "status": "OK",
+                  "code": 200,
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n  \"success\": true,\n  \"message\": \"Merchant fee deleted successfully\",\n  \"data\": null,\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Operators",
+      "description": "Operator management — mobile money operators (Wave, Orange Money, Free Money) and their fee configurations.",
       "item": [
         {
           "name": "Get All Active Operators",
@@ -357,7 +1571,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["operators", "{{operatorId}}", "fees"]
             },
-            "description": "Creates a fee configuration for an operator. `feePercentage` is a decimal (e.g. `0.02` = 2%)."
+            "description": "Creates a fee configuration for an operator.\n\n`feePercentage` is a decimal (e.g. `0.02` = 2%).\n\n`operationType`: `PAYIN` | `PAYOUT` | `TRANSFER`\n`feeType`: `PERCENTAGE` | `FIXED` | `HYBRID`"
           },
           "response": [
             {
@@ -373,6 +1587,7 @@
     },
     {
       "name": "Payments",
+      "description": "Payment transactions — initiation, status lookup, and operator callbacks.",
       "item": [
         {
           "name": "Initiate Payment",
@@ -398,7 +1613,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"merchantCode\": \"{{merchantCode}}\",\n  \"operatorCode\": \"WAVE\",\n  \"amount\": 5000,\n  \"currency\": \"XOF\",\n  \"payerPhone\": \"+221770000001\",\n  \"payerFullName\": \"Mamadou Diallo\",\n  \"recipientPhone\": \"+221770000002\",\n  \"recipientName\": \"Cadoobi Store\",\n  \"callbackUrl\": \"https://merchant.example.com/callbacks/payment\"\n}",
+              "raw": "{\n  \"reference\": \"CADOOBI01-20240301-A1B2C3D4\",\n  \"merchantId\": \"{{merchantId}}\",\n  \"merchantCode\": \"{{merchantCode}}\",\n  \"operatorCode\": \"WAVE\",\n  \"amount\": 5000,\n  \"currency\": \"XOF\",\n  \"payerPhone\": \"+221770000001\",\n  \"payerFullName\": \"Mamadou Diallo\",\n  \"recipientPhone\": \"+221770000002\",\n  \"recipientName\": \"Cadoobi Store\",\n  \"callbackUrl\": \"https://merchant.example.com/callbacks/payment\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -406,7 +1621,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["payments"]
             },
-            "description": "Initiates a new payment. The reference is auto-generated as `{MERCHANTCODE}-{YYYYMMDD}-{8hex}`. The auto-test saves the returned reference into `{{paymentReference}}`."
+            "description": "Initiates a new payment transaction. `reference` must be unique. The auto-test saves the returned reference into `{{paymentReference}}`."
           },
           "response": [
             {
@@ -414,7 +1629,7 @@
               "status": "Created",
               "code": 201,
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Payment initiated successfully\",\n  \"data\": {\n    \"id\": \"770e8400-e29b-41d4-a716-446655440000\",\n    \"reference\": \"CADOOBI01-20240301-A1B2C3D4\",\n    \"merchantCode\": \"CADOOBI01\",\n    \"merchantName\": \"Cadoobi Store\",\n    \"operatorCode\": \"WAVE\",\n    \"amount\": 5000,\n    \"feeAmount\": 100,\n    \"netAmount\": 4900,\n    \"currency\": \"XOF\",\n    \"status\": \"INITIATED\",\n    \"operatorTransactionId\": null,\n    \"paymentUrl\": null,\n    \"expiresAt\": \"2024-03-02T12:00:00Z\",\n    \"createdAt\": \"2024-03-01T12:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": null\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payment initiated successfully\",\n  \"data\": {\n    \"id\": \"770e8400-e29b-41d4-a716-446655440000\",\n    \"reference\": \"CADOOBI01-20240301-A1B2C3D4\",\n    \"merchantCode\": \"CADOOBI01\",\n    \"operatorCode\": \"WAVE\",\n    \"amount\": 5000,\n    \"feeAmount\": 100,\n    \"netAmount\": 4900,\n    \"currency\": \"XOF\",\n    \"status\": \"INITIATED\",\n    \"operatorTransactionId\": null,\n    \"paymentUrl\": null,\n    \"expiresAt\": \"2024-03-02T12:00:00Z\",\n    \"createdAt\": \"2024-03-01T12:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": null\n}"
             },
             {
               "name": "404 Merchant Not Found",
@@ -442,7 +1657,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["payments", "{{paymentReference}}"]
             },
-            "description": "Retrieves a payment by its auto-generated reference."
+            "description": "Retrieves a payment by its unique reference string."
           },
           "response": [
             {
@@ -450,7 +1665,7 @@
               "status": "OK",
               "code": 200,
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Payment retrieved successfully\",\n  \"data\": {\n    \"id\": \"770e8400-e29b-41d4-a716-446655440000\",\n    \"reference\": \"CADOOBI01-20240301-A1B2C3D4\",\n    \"merchantCode\": \"CADOOBI01\",\n    \"merchantName\": \"Cadoobi Store\",\n    \"operatorCode\": \"WAVE\",\n    \"amount\": 5000,\n    \"feeAmount\": 100,\n    \"netAmount\": 4900,\n    \"currency\": \"XOF\",\n    \"status\": \"COMPLETED\",\n    \"operatorTransactionId\": \"WAVE-TXN-123456\",\n    \"paymentUrl\": null,\n    \"expiresAt\": \"2024-03-02T12:00:00Z\",\n    \"createdAt\": \"2024-03-01T12:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": null\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payment retrieved successfully\",\n  \"data\": {\n    \"id\": \"770e8400-e29b-41d4-a716-446655440000\",\n    \"reference\": \"CADOOBI01-20240301-A1B2C3D4\",\n    \"merchantCode\": \"CADOOBI01\",\n    \"operatorCode\": \"WAVE\",\n    \"amount\": 5000,\n    \"feeAmount\": 100,\n    \"netAmount\": 4900,\n    \"currency\": \"XOF\",\n    \"status\": \"SUCCESS\",\n    \"operatorTransactionId\": \"WAVE-TXN-123456\",\n    \"paymentUrl\": null,\n    \"expiresAt\": \"2024-03-02T12:00:00Z\",\n    \"createdAt\": \"2024-03-01T12:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": null\n}"
             },
             {
               "name": "404 Not Found",
@@ -464,6 +1679,7 @@
         {
           "name": "Handle Operator Callback — WAVE",
           "request": {
+            "auth": { "type": "noauth" },
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
@@ -479,7 +1695,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["payments", "callbacks", "WAVE"]
             },
-            "description": "Receives an asynchronous callback from the WAVE operator. Replace `WAVE` with `OM` or `FREE` for other operators."
+            "description": "Receives an asynchronous callback from an operator. Replace `WAVE` in the path with `OM` or `FREE` for other operators. This endpoint is typically called by the operator's system, not by clients — no auth required."
           },
           "response": [
             {
@@ -495,6 +1711,7 @@
     },
     {
       "name": "Gift Cards",
+      "description": "Gift card balance queries and redemptions.",
       "item": [
         {
           "name": "Get Gift Card Balance",
@@ -506,7 +1723,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["cards", "{{cardCode}}", "balance"]
             },
-            "description": "Returns the current balance and status of a gift card."
+            "description": "Returns the current balance and status of a gift card. Status values: `ACTIVE | EXPIRED | REDEEMED | SUSPENDED`."
           },
           "response": [
             {
@@ -514,7 +1731,7 @@
               "status": "OK",
               "code": 200,
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Gift card balance retrieved successfully\",\n  \"data\": {\n    \"id\": \"880e8400-e29b-41d4-a716-446655440000\",\n    \"cardCode\": \"GIFT-ABCD-1234\",\n    \"merchantId\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"initialAmount\": 10000,\n    \"balance\": 7500,\n    \"currency\": \"XOF\",\n    \"status\": \"PARTIALLY_USED\",\n    \"expiresAt\": \"2025-01-01T00:00:00Z\",\n    \"createdAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Gift card balance retrieved successfully\",\n  \"data\": {\n    \"id\": \"880e8400-e29b-41d4-a716-446655440000\",\n    \"cardCode\": \"GIFT-ABCD-1234\",\n    \"merchantId\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"initialAmount\": 10000,\n    \"balance\": 7500,\n    \"currency\": \"XOF\",\n    \"status\": \"ACTIVE\",\n    \"expiresAt\": \"2025-01-01T00:00:00Z\",\n    \"createdAt\": \"2024-01-01T00:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
             },
             {
               "name": "404 Not Found",
@@ -535,7 +1752,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"merchantId\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n  \"amountToRedeem\": 2500,\n  \"idempotencyKey\": \"redeem-unique-key-2024-001\"\n}",
+              "raw": "{\n  \"merchantId\": \"{{merchantId}}\",\n  \"amountToRedeem\": 2500,\n  \"idempotencyKey\": \"redeem-unique-key-2024-001\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -543,7 +1760,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["cards", "{{cardCode}}", "redeem"]
             },
-            "description": "Redeems an amount from a gift card. Use a unique `idempotencyKey` per redemption attempt to avoid duplicate charges."
+            "description": "Redeems an amount from a gift card. Use a unique `idempotencyKey` per redemption attempt to prevent duplicate charges on retries."
           },
           "response": [
             {
@@ -551,14 +1768,21 @@
               "status": "Created",
               "code": 201,
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Gift card redeemed successfully\",\n  \"data\": {\n    \"id\": \"990e8400-e29b-41d4-a716-446655440000\",\n    \"giftCardId\": \"880e8400-e29b-41d4-a716-446655440000\",\n    \"merchantId\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"idempotencyKey\": \"redeem-unique-key-2024-001\",\n    \"amountRedeemed\": 2500,\n    \"remainingBalance\": 5000,\n    \"status\": \"COMPLETED\",\n    \"redeemedAt\": \"2024-01-01T12:00:00Z\",\n    \"createdAt\": \"2024-01-01T12:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": null\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Gift card redeemed successfully\",\n  \"data\": {\n    \"id\": \"990e8400-e29b-41d4-a716-446655440000\",\n    \"giftCardId\": \"880e8400-e29b-41d4-a716-446655440000\",\n    \"merchantId\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"idempotencyKey\": \"redeem-unique-key-2024-001\",\n    \"amountRedeemed\": 2500,\n    \"remainingBalance\": 5000,\n    \"status\": \"COMPLETED\",\n    \"redeemedAt\": \"2024-03-01T12:00:00Z\",\n    \"createdAt\": \"2024-03-01T12:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": null\n}"
             },
             {
-              "name": "400 Bad Request",
+              "name": "400 Insufficient balance",
               "status": "Bad Request",
               "code": 400,
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 400,\n    \"type\": \"BAD_REQUEST\",\n    \"message\": \"Insufficient balance\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-01-01T12:00:00Z\",\n  \"path\": \"/cards/GIFT-ABCD-1234/redeem\"\n}"
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 400,\n    \"type\": \"BAD_REQUEST\",\n    \"message\": \"Insufficient gift card balance\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": \"/cards/GIFT-ABCD-1234/redeem\"\n}"
+            },
+            {
+              "name": "409 Conflict — duplicate idempotency key",
+              "status": "Conflict",
+              "code": 409,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 409,\n    \"type\": \"CONFLICT\",\n    \"message\": \"A redemption with this idempotency key already exists\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": \"/cards/GIFT-ABCD-1234/redeem\"\n}"
             }
           ]
         }

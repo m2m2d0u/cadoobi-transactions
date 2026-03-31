@@ -1,11 +1,11 @@
 package sn.symmetry.cadoobi.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.annotation.Lazy;
 import sn.symmetry.cadoobi.domain.entity.CompensationAccount;
 import sn.symmetry.cadoobi.domain.entity.Merchant;
 import sn.symmetry.cadoobi.domain.entity.Operator;
@@ -25,13 +25,23 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class MerchantService {
 
     private final MerchantRepository merchantRepository;
     private final UserRepository userRepository;
     private final OperatorService operatorService;
+    private final MerchantFeeService merchantFeeService;
+
+    public MerchantService(MerchantRepository merchantRepository,
+                           UserRepository userRepository,
+                           OperatorService operatorService,
+                           @Lazy MerchantFeeService merchantFeeService) {
+        this.merchantRepository = merchantRepository;
+        this.userRepository = userRepository;
+        this.operatorService = operatorService;
+        this.merchantFeeService = merchantFeeService;
+    }
 
     @Transactional(readOnly = true)
     public List<MerchantResponse> getAllMerchants() {
@@ -100,6 +110,7 @@ public class MerchantService {
             .build();
 
         merchant = merchantRepository.save(merchant);
+        merchantFeeService.applyDefaultFeesToMerchant(merchant);
         log.info("Created merchant: code={}, name={}", merchant.getCode(), merchant.getName());
         return toResponse(merchant);
     }
