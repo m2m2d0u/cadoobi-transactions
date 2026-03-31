@@ -34,6 +34,7 @@ public class LedgerService {
     private final LedgerEntryRepository ledgerEntryRepository;
     private final MerchantRepository merchantRepository;
     private final MerchantFeeService merchantFeeService;
+    private final SystemAccountService systemAccountService;
 
     // ── PAYIN ─────────────────────────────────────────────────────────────────
 
@@ -164,6 +165,9 @@ public class LedgerService {
                 feeAmount, tx.getCurrency(),
                 "PAYOUT fee retained: " + feeAmount,
                 "PAYOUT_FEE_" + tx.getId(), null, tx);
+
+            // Record fee earned in system account
+            systemAccountService.recordMerchantFeeEarned(tx, feeAmount);
         }
 
         log.info("PAYOUT_SETTLEMENT posted: merchant={}, amount={}, fee={}",
