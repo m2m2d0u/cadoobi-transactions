@@ -166,6 +166,15 @@ public class MerchantService {
         log.info("Deleted merchant: code={}", merchant.getCode());
     }
 
+    @Transactional
+    public MerchantResponse updateMerchantStatus(UUID id, MerchantStatus status) {
+        Merchant merchant = findById(id);
+        merchant.setStatus(status);
+        merchant = merchantRepository.save(merchant);
+        log.info("Updated merchant status: code={}, status={}", merchant.getCode(), merchant.getStatus());
+        return toResponse(merchant);
+    }
+
     @Transactional(readOnly = true)
     public Page<MerchantResponse> getMerchantsByUserId(UUID userId, Pageable pageable) {
         if (!userRepository.existsById(userId)) {

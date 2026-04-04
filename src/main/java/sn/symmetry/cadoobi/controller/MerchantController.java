@@ -22,6 +22,7 @@ import sn.symmetry.cadoobi.dto.common.ControllerApiResponse;
 import sn.symmetry.cadoobi.dto.CreateMerchantRequest;
 import sn.symmetry.cadoobi.dto.MerchantResponse;
 import sn.symmetry.cadoobi.dto.UpdateMerchantRequest;
+import sn.symmetry.cadoobi.dto.UpdateMerchantStatusRequest;
 import sn.symmetry.cadoobi.service.MerchantService;
 
 import java.util.List;
@@ -237,6 +238,43 @@ public class MerchantController {
         log.info("Updating merchant: id={}", id);
         MerchantResponse merchant = merchantService.updateMerchant(id, request);
         return ResponseEntity.ok(ControllerApiResponse.success(merchant, "Merchant updated successfully"));
+    }
+
+    @PatchMapping("/{id}/status")
+    @Operation(
+        summary = "Update merchant status",
+        description = "Updates only the status of a merchant account (PENDING, ACTIVE, SUSPENDED, BLOCKED)"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Merchant status updated successfully",
+            content = @Content(schema = @Schema(implementation = MerchantResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid status value",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Merchant not found",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        )
+    })
+    public ResponseEntity<ControllerApiResponse<MerchantResponse>> updateMerchantStatus(
+        @Parameter(description = "Unique merchant identifier (UUID)", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
+        @PathVariable UUID id,
+        @Valid @RequestBody UpdateMerchantStatusRequest request
+    ) {
+        log.info("Updating merchant status: id={}, newStatus={}", id, request.getStatus());
+        MerchantResponse merchant = merchantService.updateMerchantStatus(id, request.getStatus());
+        return ResponseEntity.ok(ControllerApiResponse.success(merchant, "Merchant status updated successfully"));
     }
 
     @DeleteMapping("/{id}")
