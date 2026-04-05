@@ -23,7 +23,8 @@
     { "key": "merchantCode",     "value": "CADOOBI01",                   "type": "string" },
     { "key": "operatorId",       "value": "",                             "type": "string" },
     { "key": "paymentReference", "value": "",                             "type": "string" },
-    { "key": "cardCode",         "value": "",                             "type": "string" }
+    { "key": "cardCode",         "value": "",                             "type": "string" },
+    { "key": "payoutId",         "value": "",                             "type": "string" }
   ],
   "item": [
     {
@@ -1882,6 +1883,202 @@
               "code": 409,
               "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 409,\n    \"type\": \"CONFLICT\",\n    \"message\": \"A redemption with this idempotency key already exists\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": \"/cards/GIFT-ABCD-1234/redeem\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Payouts",
+      "description": "Payout transaction management endpoints for creating, executing, and tracking merchant payouts.",
+      "item": [
+        {
+          "name": "Create Payout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('payoutId', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"merchantId\": \"{{merchantId}}\",\n  \"operatorCode\": \"ORANGE_MONEY\",\n  \"recipientNumber\": \"+221776666666\",\n  \"amount\": 10000,\n  \"currency\": \"XOF\",\n  \"idempotencyKey\": \"payout-unique-key-2024-001\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payouts",
+              "host": ["{{baseUrl}}"],
+              "path": ["payouts"]
+            },
+            "description": "Creates a new payout transaction. Funds are locked from the merchant's ledger immediately. The payout is created in PENDING status."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payout created successfully\",\n  \"data\": {\n    \"id\": \"po0e8400-e29b-41d4-a716-446655440000\",\n    \"merchantId\": \"2abfae0f-3a4a-4b00-9b46-ef5540d1af91\",\n    \"merchantCode\": \"CADOOBI01\",\n    \"operatorCode\": \"ORANGE_MONEY\",\n    \"recipientNumber\": \"+221776666666\",\n    \"amount\": 10000.00,\n    \"feeAmount\": 200.00,\n    \"netAmount\": 9800.00,\n    \"merchantFeeAmount\": 150.00,\n    \"currency\": \"XOF\",\n    \"status\": \"PENDING\",\n    \"idempotencyKey\": \"payout-unique-key-2024-001\",\n    \"operatorTransactionId\": null,\n    \"createdAt\": \"2024-06-01T10:00:00Z\",\n    \"updatedAt\": \"2024-06-01T10:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "400 Insufficient Balance",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 400,\n    \"type\": \"BUSINESS_ERROR\",\n    \"message\": \"Insufficient balance. Available: 5000.00, Required: 10150.00\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\",\n  \"path\": \"/payouts\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Payout by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/payouts/{{payoutId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["payouts", "{{payoutId}}"]
+            },
+            "description": "Retrieves detailed information about a specific payout transaction by UUID."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payout retrieved successfully\",\n  \"data\": {\n    \"id\": \"po0e8400-e29b-41d4-a716-446655440000\",\n    \"merchantId\": \"2abfae0f-3a4a-4b00-9b46-ef5540d1af91\",\n    \"merchantCode\": \"CADOOBI01\",\n    \"operatorCode\": \"ORANGE_MONEY\",\n    \"recipientNumber\": \"+221776666666\",\n    \"amount\": 10000.00,\n    \"feeAmount\": 200.00,\n    \"netAmount\": 9800.00,\n    \"merchantFeeAmount\": 150.00,\n    \"currency\": \"XOF\",\n    \"status\": \"PROCESSING\",\n    \"idempotencyKey\": \"payout-unique-key-2024-001\",\n    \"operatorTransactionId\": \"OP-TXN-123456\",\n    \"createdAt\": \"2024-06-01T10:00:00Z\",\n    \"updatedAt\": \"2024-06-01T10:05:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:10:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 404,\n    \"type\": \"RESOURCE_NOT_FOUND\",\n    \"message\": \"Payout not found with id: po0e8400-e29b-41d4-a716-446655440000\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-06-01T10:10:00Z\",\n  \"path\": \"/payouts/po0e8400-e29b-41d4-a716-446655440000\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All Payouts (Role-Based)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/payouts?page=0&size=20&sort=createdAt,desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["payouts"],
+              "query": [
+                { "key": "page", "value": "0", "description": "Page number (0-indexed)" },
+                { "key": "size", "value": "20", "description": "Items per page" },
+                { "key": "sort", "value": "createdAt,desc", "description": "Sort field and direction" }
+              ]
+            },
+            "description": "Returns all payout transactions with role-based access control. SUPER_ADMIN and ADMIN can view all payouts. Other users can only view payouts for merchants they manage."
+          },
+          "response": [
+            {
+              "name": "200 OK - Admin User",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"45 payout(s) found\",\n  \"data\": [\n    {\n      \"id\": \"po0e8400-e29b-41d4-a716-446655440000\",\n      \"merchantId\": \"2abfae0f-3a4a-4b00-9b46-ef5540d1af91\",\n      \"merchantCode\": \"CADOOBI01\",\n      \"operatorCode\": \"ORANGE_MONEY\",\n      \"recipientNumber\": \"+221776666666\",\n      \"amount\": 10000.00,\n      \"feeAmount\": 200.00,\n      \"netAmount\": 9800.00,\n      \"merchantFeeAmount\": 150.00,\n      \"currency\": \"XOF\",\n      \"status\": \"COMPLETED\",\n      \"idempotencyKey\": \"payout-unique-key-2024-001\",\n      \"operatorTransactionId\": \"OP-TXN-123456\",\n      \"createdAt\": \"2024-06-01T10:00:00Z\",\n      \"updatedAt\": \"2024-06-01T10:15:00Z\"\n    },\n    {\n      \"id\": \"po0e8400-e29b-41d4-a716-446655440001\",\n      \"merchantId\": \"3bcfae0f-3a4a-4b00-9b46-ef5540d1af92\",\n      \"merchantCode\": \"MERCHANT02\",\n      \"operatorCode\": \"FREE_MONEY\",\n      \"recipientNumber\": \"+221777777777\",\n      \"amount\": 5000.00,\n      \"feeAmount\": 100.00,\n      \"netAmount\": 4900.00,\n      \"merchantFeeAmount\": 75.00,\n      \"currency\": \"XOF\",\n      \"status\": \"PENDING\",\n      \"idempotencyKey\": \"payout-unique-key-2024-002\",\n      \"operatorTransactionId\": null,\n      \"createdAt\": \"2024-06-01T09:30:00Z\",\n      \"updatedAt\": \"2024-06-01T09:30:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 0,\n    \"size\": 20,\n    \"totalElements\": 45,\n    \"totalPages\": 3,\n    \"first\": true,\n    \"last\": false\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T11:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "200 OK - Regular User",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"3 payout(s) found\",\n  \"data\": [\n    {\n      \"id\": \"po0e8400-e29b-41d4-a716-446655440000\",\n      \"merchantId\": \"2abfae0f-3a4a-4b00-9b46-ef5540d1af91\",\n      \"merchantCode\": \"CADOOBI01\",\n      \"operatorCode\": \"ORANGE_MONEY\",\n      \"recipientNumber\": \"+221776666666\",\n      \"amount\": 10000.00,\n      \"feeAmount\": 200.00,\n      \"netAmount\": 9800.00,\n      \"merchantFeeAmount\": 150.00,\n      \"currency\": \"XOF\",\n      \"status\": \"COMPLETED\",\n      \"idempotencyKey\": \"payout-unique-key-2024-001\",\n      \"operatorTransactionId\": \"OP-TXN-123456\",\n      \"createdAt\": \"2024-06-01T10:00:00Z\",\n      \"updatedAt\": \"2024-06-01T10:15:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 0,\n    \"size\": 20,\n    \"totalElements\": 3,\n    \"totalPages\": 1,\n    \"first\": true,\n    \"last\": true\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T11:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Execute Payout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/payouts/{{payoutId}}/execute",
+              "host": ["{{baseUrl}}"],
+              "path": ["payouts", "{{payoutId}}", "execute"]
+            },
+            "description": "Executes a PENDING payout by initiating the withdrawal transaction with the operator. Changes status from PENDING to PROCESSING."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payout executed successfully\",\n  \"data\": {\n    \"id\": \"po0e8400-e29b-41d4-a716-446655440000\",\n    \"merchantId\": \"2abfae0f-3a4a-4b00-9b46-ef5540d1af91\",\n    \"merchantCode\": \"CADOOBI01\",\n    \"operatorCode\": \"ORANGE_MONEY\",\n    \"recipientNumber\": \"+221776666666\",\n    \"amount\": 10000.00,\n    \"feeAmount\": 200.00,\n    \"netAmount\": 9800.00,\n    \"merchantFeeAmount\": 150.00,\n    \"currency\": \"XOF\",\n    \"status\": \"PROCESSING\",\n    \"idempotencyKey\": \"payout-unique-key-2024-001\",\n    \"operatorTransactionId\": null,\n    \"createdAt\": \"2024-06-01T10:00:00Z\",\n    \"updatedAt\": \"2024-06-01T10:05:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:05:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "400 Invalid State",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 400,\n    \"type\": \"BUSINESS_ERROR\",\n    \"message\": \"Cannot execute payout in status: COMPLETED. Only PENDING payouts can be executed.\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-06-01T10:05:00Z\",\n  \"path\": \"/payouts/po0e8400-e29b-41d4-a716-446655440000/execute\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 404,\n    \"type\": \"RESOURCE_NOT_FOUND\",\n    \"message\": \"Payout not found with id: po0e8400-e29b-41d4-a716-446655440000\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-06-01T10:05:00Z\",\n  \"path\": \"/payouts/po0e8400-e29b-41d4-a716-446655440000/execute\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Payout Status",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/payouts/{{payoutId}}/status?status=COMPLETED&operatorTransactionId=OP-TXN-123456",
+              "host": ["{{baseUrl}}"],
+              "path": ["payouts", "{{payoutId}}", "status"],
+              "query": [
+                { "key": "status", "value": "COMPLETED", "description": "New status (PROCESSING, COMPLETED, FAILED)" },
+                { "key": "operatorTransactionId", "value": "OP-TXN-123456", "description": "Operator's transaction reference (optional)" }
+              ]
+            },
+            "description": "Updates payout status (PROCESSING, COMPLETED, or FAILED). Triggers ledger settlement or lock release based on the status."
+          },
+          "response": [
+            {
+              "name": "200 OK - Completed",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payout status updated successfully\",\n  \"data\": {\n    \"id\": \"po0e8400-e29b-41d4-a716-446655440000\",\n    \"merchantId\": \"2abfae0f-3a4a-4b00-9b46-ef5540d1af91\",\n    \"merchantCode\": \"CADOOBI01\",\n    \"operatorCode\": \"ORANGE_MONEY\",\n    \"recipientNumber\": \"+221776666666\",\n    \"amount\": 10000.00,\n    \"feeAmount\": 200.00,\n    \"netAmount\": 9800.00,\n    \"merchantFeeAmount\": 150.00,\n    \"currency\": \"XOF\",\n    \"status\": \"COMPLETED\",\n    \"idempotencyKey\": \"payout-unique-key-2024-001\",\n    \"operatorTransactionId\": \"OP-TXN-123456\",\n    \"createdAt\": \"2024-06-01T10:00:00Z\",\n    \"updatedAt\": \"2024-06-01T10:15:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:15:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "200 OK - Failed",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payout status updated successfully\",\n  \"data\": {\n    \"id\": \"po0e8400-e29b-41d4-a716-446655440000\",\n    \"merchantId\": \"2abfae0f-3a4a-4b00-9b46-ef5540d1af91\",\n    \"merchantCode\": \"CADOOBI01\",\n    \"operatorCode\": \"ORANGE_MONEY\",\n    \"recipientNumber\": \"+221776666666\",\n    \"amount\": 10000.00,\n    \"feeAmount\": 200.00,\n    \"netAmount\": 9800.00,\n    \"merchantFeeAmount\": 150.00,\n    \"currency\": \"XOF\",\n    \"status\": \"FAILED\",\n    \"idempotencyKey\": \"payout-unique-key-2024-001\",\n    \"operatorTransactionId\": \"OP-TXN-123456\",\n    \"createdAt\": \"2024-06-01T10:00:00Z\",\n    \"updatedAt\": \"2024-06-01T10:15:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:15:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 404,\n    \"type\": \"RESOURCE_NOT_FOUND\",\n    \"message\": \"Payout not found with id: po0e8400-e29b-41d4-a716-446655440000\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-06-01T10:15:00Z\",\n  \"path\": \"/payouts/po0e8400-e29b-41d4-a716-446655440000/status\"\n}"
             }
           ]
         }
