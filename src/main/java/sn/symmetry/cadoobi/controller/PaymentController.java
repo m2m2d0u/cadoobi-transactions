@@ -20,11 +20,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
+import sn.symmetry.cadoobi.domain.entity.Merchant;
 import sn.symmetry.cadoobi.dto.common.ControllerApiResponse;
 import sn.symmetry.cadoobi.dto.InitiatePaymentRequest;
 import sn.symmetry.cadoobi.dto.OperatorCallbackRequest;
 import sn.symmetry.cadoobi.dto.PaymentResponse;
 import sn.symmetry.cadoobi.security.CustomUserDetails;
+import sn.symmetry.cadoobi.service.ApiKeyService;
+import sn.symmetry.cadoobi.service.MerchantService;
 import sn.symmetry.cadoobi.service.PaymentService;
 
 import java.util.List;
@@ -39,12 +42,18 @@ public class PaymentController {
 
     private final PaymentService paymentService;
     private final ObjectMapper objectMapper;
+    private final ApiKeyService apiKeyService;
+    private final MerchantService merchantService;
 
-    @PostMapping
     @Operation(
         summary = "Initiate a payment transaction",
-        description = "Creates a new payment transaction with the specified merchant and operator details"
+        description = "Creates a new payment transaction with the specified merchant and operator details. " +
+                     "**Authentication**: This endpoint requires API key authentication via the X-API-Key header. " +
+                     "JWT authentication is not supported for payment initiation. " +
+                     "To create an API key, use POST /api-keys endpoint."
     )
+    @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "apiKey")
+    @PostMapping
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "201",
@@ -73,12 +82,28 @@ public class PaymentController {
         )
     })
     public ResponseEntity<ControllerApiResponse<PaymentResponse>> initiatePayment(
+        @Parameter(description = "API Key for authentication", required = true)
+        @RequestHeader(value = "X-API-Key") String apiKey,
+        @Parameter(description = "Referrer URL (optional, for security validation)")
+        @RequestHeader(value = "Referer", required = false) String referrer,
         @Valid @RequestBody InitiatePaymentRequest request
     ) {
         log.info("Received payment initiation request: merchant={}, operator={}",
             request.getMerchantId(), request.getOperatorCode());
 
-        PaymentResponse payment = paymentService.initiatePayment(request);
+        Merchant merchant = merchantService.findByCode(request.getMerchantCode());
+        // Validate API key
+        UUID userId = apiKeyService.validateApiKey(apiKey.trim(), referrer, merchant.getUser());
+        if (userId == null) {
+            log.warn("Invalid or expired API key for payment initiation");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ControllerApiResponse.error("Invalid or expired API key", 401, "UNAUTHORIZED"));
+        }
+
+        // Update API key last used timestamp
+        apiKeyService.updateLastUsed(apiKey.trim(), userId);
+
+        PaymentResponse payment = paymentService.initiatePayment(request, userId);
 
         ControllerApiResponse<PaymentResponse> response = ControllerApiResponse.created(
             payment,

@@ -1,7 +1,6 @@
 package sn.symmetry.cadoobi.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.transaction.Transaction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -52,7 +51,7 @@ public class PaymentService {
     private static final long PAYMENT_EXPIRY_HOURS = 24;
 
     @Transactional
-    public PaymentResponse initiatePayment(InitiatePaymentRequest request) {
+    public PaymentResponse initiatePayment(InitiatePaymentRequest request, UUID userId) {
         Merchant merchant = merchantService.findByCode(request.getMerchantCode());
         Operator operator = operatorService.getOperatorByCode(request.getOperatorCode());
 
@@ -60,10 +59,14 @@ public class PaymentService {
             throw new IllegalArgumentException("Operator " + operator.getName() + " does not support PAYIN operations");
         }
 
+        if (!merchant.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("Merchant does not belong to user");
+        }
+
         BigDecimal feeAmount = operatorFeeService.calculateFee(
-            operator.getId(),
-            OperationType.PAYIN,
-            request.getAmount()
+                operator.getId(),
+                OperationType.PAYIN,
+                request.getAmount()
         );
 
         Optional<PaymentTransaction> paymentTransaction = paymentTransactionRepository.findByReference(request.getReference());
@@ -76,27 +79,27 @@ public class PaymentService {
 //        String reference = generateReference(merchant.getCode());
 
         PaymentTransaction payment = PaymentTransaction.builder()
-            .reference(request.getReference())
-            .merchant(merchant)
-            .operator(operator)
-            .amount(request.getAmount())
-            .feeAmount(feeAmount)
-            .netAmount(netAmount)
-            .currency(request.getCurrency())
-            .payerPhone(request.getPayerPhone())
-            .payerFullName(request.getPayerFullName())
-            .recipientPhone(request.getRecipientPhone())
-            .recipientName(request.getRecipientName())
-            .status(PaymentStatus.INITIATED)
-            .callbackUrl(request.getCallbackUrl())
-            .expiresAt(Instant.now().plus(PAYMENT_EXPIRY_HOURS, ChronoUnit.HOURS))
-            .build();
+                .reference(request.getReference())
+                .merchant(merchant)
+                .operator(operator)
+                .amount(request.getAmount())
+                .feeAmount(feeAmount)
+                .netAmount(netAmount)
+                .currency(request.getCurrency())
+                .payerPhone(request.getPayerPhone())
+                .payerFullName(request.getPayerFullName())
+                .recipientPhone(request.getRecipientPhone())
+                .recipientName(request.getRecipientName())
+                .status(PaymentStatus.INITIATED)
+                .callbackUrl(request.getCallbackUrl())
+                .expiresAt(Instant.now().plus(PAYMENT_EXPIRY_HOURS, ChronoUnit.HOURS))
+                .build();
 
         payment = paymentTransactionRepository.save(payment);
 
         log.info("Initiated payment: reference={}, merchant={}, operator={}, amount={}, fee={}",
-            payment.getReference(), merchant.getCode(), operator.getCode(),
-            payment.getAmount(), payment.getFeeAmount());
+                payment.getReference(), merchant.getCode(), operator.getCode(),
+                payment.getAmount(), payment.getFeeAmount());
 
         return toResponse(payment);
     }
@@ -104,7 +107,7 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public PaymentResponse getPaymentByReference(String reference) {
         PaymentTransaction payment = paymentTransactionRepository.findByReference(reference)
-            .orElseThrow(() -> new ResourceNotFoundException("Payment not found with reference: " + reference));
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found with reference: " + reference));
         return toResponse(payment);
     }
 
@@ -118,18 +121,18 @@ public class PaymentService {
         if (isAdmin) {
             // Admin users can see all payment transactions
             return paymentTransactionRepository.findAll(pageable)
-                .map(this::toResponse);
+                    .map(this::toResponse);
         } else {
             // Regular users can only see transactions for merchants they manage
             return paymentTransactionRepository.findByMerchantUserId(currentUserId, pageable)
-                .map(this::toResponse);
+                    .map(this::toResponse);
         }
     }
 
     @Transactional
     public void handleOperatorCallback(String operatorCode, OperatorCallbackRequest request) {
         log.info("Processing operator callback: operator={}, reference={}, status={}",
-            operatorCode, request.getPaymentReference(), request.getStatus());
+                operatorCode, request.getPaymentReference(), request.getStatus());
 
         // 1. Validate operator
         Operator operator = operatorService.getOperatorByCode(operatorCode);
@@ -142,14 +145,14 @@ public class PaymentService {
 
         // 3. Find payment transaction
         PaymentTransaction payment = paymentTransactionRepository.findByReference(request.getPaymentReference())
-            .orElseThrow(() -> new ResourceNotFoundException("Payment not found with reference: " + request.getPaymentReference()));
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found with reference: " + request.getPaymentReference()));
 
         // 4. Validate payment is not in final state
         if (payment.getStatus() == PaymentStatus.COMPLETED ||
-            payment.getStatus() == PaymentStatus.CANCELLED ||
-            payment.getStatus() == PaymentStatus.EXPIRED) {
+                payment.getStatus() == PaymentStatus.CANCELLED ||
+                payment.getStatus() == PaymentStatus.EXPIRED) {
             log.warn("Payment already in final state: reference={}, currentStatus={}",
-                payment.getReference(), payment.getStatus());
+                    payment.getReference(), payment.getStatus());
             throw new BusinessException("Payment already in final state: " + payment.getStatus());
         }
 
@@ -158,13 +161,13 @@ public class PaymentService {
 
         // 6. Store callback record
         OperatorCallback callback = OperatorCallback.builder()
-            .paymentTransaction(payment)
-            .operator(operator)
-            .operatorReference(request.getOperatorReference())
-            .rawPayload(request.getRawPayload() != null ? request.getRawPayload() : "")
-            .operatorStatus(request.getStatus())
-            .processedAt(Instant.now())
-            .build();
+                .paymentTransaction(payment)
+                .operator(operator)
+                .operatorReference(request.getOperatorReference())
+                .rawPayload(request.getRawPayload() != null ? request.getRawPayload() : "")
+                .operatorStatus(request.getStatus())
+                .processedAt(Instant.now())
+                .build();
         operatorCallbackRepository.save(callback);
 
         // 7. Update payment status
@@ -174,13 +177,13 @@ public class PaymentService {
         sendMerchantCallback(payment, newStatus);
 
         log.info("Operator callback processed successfully: reference={}, newStatus={}",
-            payment.getReference(), newStatus);
+                payment.getReference(), newStatus);
     }
 
     @Transactional
     public PaymentTransaction updatePaymentStatus(String reference, PaymentStatus status, String operatorTransactionId) {
         PaymentTransaction payment = paymentTransactionRepository.findByReference(reference)
-            .orElseThrow(() -> new ResourceNotFoundException("Payment not found with reference: " + reference));
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found with reference: " + reference));
 
         PaymentStatus oldStatus = payment.getStatus();
         payment.setStatus(status);
@@ -192,7 +195,7 @@ public class PaymentService {
         payment = paymentTransactionRepository.save(payment);
 
         log.info("Updated payment status: reference={}, oldStatus={}, newStatus={}, operatorTxnId={}",
-            reference, oldStatus, status, operatorTransactionId);
+                reference, oldStatus, status, operatorTransactionId);
 
         // Publish event for completed payments to trigger ledger settlement
         if (status == PaymentStatus.COMPLETED) {
@@ -223,13 +226,13 @@ public class PaymentService {
 
         // Map common success variations
         if (status.contains("SUCCESS") || status.contains("COMPLETED") ||
-            status.contains("CONFIRMED") || status.equals("OK")) {
+                status.contains("CONFIRMED") || status.equals("OK")) {
             return PaymentStatus.COMPLETED;
         }
 
         // Map common failure variations
         if (status.contains("FAIL") || status.contains("REJECT") ||
-            status.contains("DECLINE") || status.contains("ERROR")) {
+                status.contains("DECLINE") || status.contains("ERROR")) {
             return PaymentStatus.FAILED;
         }
 
@@ -245,7 +248,7 @@ public class PaymentService {
 
         // Default to PENDING for unknown or in-progress statuses
         if (status.contains("PENDING") || status.contains("PROCESS") ||
-            status.contains("ONGOING") || status.contains("PROGRESS")) {
+                status.contains("ONGOING") || status.contains("PROGRESS")) {
             return PaymentStatus.PENDING;
         }
 
@@ -271,9 +274,9 @@ public class PaymentService {
 
             // Send async notification
             notificationService.sendNotification(
-                NotificationEventType.PAYMENT_STATUS_UPDATE,
-                callbackUrl,
-                payload
+                    NotificationEventType.PAYMENT_STATUS_UPDATE,
+                    callbackUrl,
+                    payload
             );
 
             log.info("Merchant callback queued: reference={}, url={}", payment.getReference(), callbackUrl);
@@ -286,21 +289,21 @@ public class PaymentService {
 
     private PaymentResponse toResponse(PaymentTransaction payment) {
         return PaymentResponse.builder()
-            .id(payment.getId())
-            .reference(payment.getReference())
-            .merchantCode(payment.getMerchant().getCode())
-            .merchantId(payment.getMerchant().getSymmetryMerchantId())
-            .operatorCode(payment.getOperator().getCode())
-            .amount(payment.getAmount())
-            .payerPhone(payment.getPayerPhone())
-            .feeAmount(payment.getFeeAmount())
-            .netAmount(payment.getNetAmount())
-            .currency(payment.getCurrency())
-            .status(payment.getStatus())
-            .operatorTransactionId(payment.getOperatorTransactionId())
-            .paymentUrl(payment.getPaymentUrl())
-            .expiresAt(payment.getExpiresAt())
-            .createdAt(payment.getCreatedAt())
-            .build();
+                .id(payment.getId())
+                .reference(payment.getReference())
+                .merchantCode(payment.getMerchant().getCode())
+                .merchantId(payment.getMerchant().getSymmetryMerchantId())
+                .operatorCode(payment.getOperator().getCode())
+                .amount(payment.getAmount())
+                .payerPhone(payment.getPayerPhone())
+                .feeAmount(payment.getFeeAmount())
+                .netAmount(payment.getNetAmount())
+                .currency(payment.getCurrency())
+                .status(payment.getStatus())
+                .operatorTransactionId(payment.getOperatorTransactionId())
+                .paymentUrl(payment.getPaymentUrl())
+                .expiresAt(payment.getExpiresAt())
+                .createdAt(payment.getCreatedAt())
+                .build();
     }
 }

@@ -17,6 +17,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -109,15 +110,15 @@ public class ApiKeyService {
     }
 
     @Transactional
-    public void updateLastUsed(String apiKey) {
+    public void updateLastUsed(String apiKey, UUID userId) {
         // Find by trying to match against all API keys
-        apiKeyRepository.findAll().stream()
-            .filter(key -> encryptionService.matches(apiKey, key.getApiKey()))
-            .findFirst()
-            .ifPresent(key -> {
-                key.setLastUsedAt(Instant.now());
-                apiKeyRepository.save(key);
-            });
+        String encryptedKey = encryptionService.encrypt(apiKey);
+        Optional<ApiKey> apiKeyEntity = apiKeyRepository.findByApiKeyAndUser_Id(encryptedKey, userId);
+        if (apiKeyEntity.isPresent()) {
+            ApiKey apiKeyToUpdate = apiKeyEntity.get();
+            apiKeyToUpdate.setLastUsedAt(Instant.now());
+            apiKeyRepository.save(apiKeyToUpdate);
+        }
     }
 
     /**
@@ -125,9 +126,9 @@ public class ApiKeyService {
      * Checks if key exists, is active, hasn't expired, and matches referrer restrictions.
      */
     @Transactional(readOnly = true)
-    public UUID validateApiKey(String apiKey, String referrer) {
+    public UUID validateApiKey(String apiKey, String referrer, User user) {
         // Find matching API key
-        return apiKeyRepository.findAll().stream()
+        return apiKeyRepository.findApiKeysByUser(user).stream()
             .filter(key -> {
                 try {
                     return encryptionService.matches(apiKey, key.getApiKey());
@@ -201,7 +202,7 @@ public class ApiKeyService {
             try {
                 keyForMasking = encryptionService.decrypt(apiKey.getApiKey());
             } catch (Exception e) {
-                log.error("Error decrypting API key for masking", e);
+                log.error("Error decrypting API key for masking (id={}): {}", apiKey.getId(), e.getMessage());
                 keyForMasking = "pk_****";
             }
         }

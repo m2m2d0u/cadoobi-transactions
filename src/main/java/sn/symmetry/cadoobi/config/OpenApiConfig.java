@@ -38,12 +38,18 @@ public class OpenApiConfig {
                                 .url("https://api.cadoobi.com")
                                 .description("Production server")))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
+                .addSecurityItem(new SecurityRequirement().addList("apiKey"))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth", new SecurityScheme()
                                 .name("bearerAuth")
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
                                 .bearerFormat("JWT")
-                                .description("JWT token obtained from POST /auth/login")));
+                                .description("JWT token obtained from POST /auth/login"))
+                        .addSecuritySchemes("apiKey", new SecurityScheme()
+                                .name("X-API-Key")
+                                .type(SecurityScheme.Type.APIKEY)
+                                .in(SecurityScheme.In.HEADER)
+                                .description("API key for external integrations. Create via POST /api-keys")));
     }
 }

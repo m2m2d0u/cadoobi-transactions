@@ -11,20 +11,22 @@
     ]
   },
   "variable": [
-    { "key": "baseUrl",          "value": "http://localhost:8081/api/v1", "type": "string" },
-    { "key": "token",            "value": "",                             "type": "string" },
-    { "key": "refreshToken",     "value": "",                             "type": "string" },
-    { "key": "userId",           "value": "",                             "type": "string" },
-    { "key": "roleId",           "value": "",                             "type": "string" },
-    { "key": "permissionId",     "value": "",                             "type": "string" },
-    { "key": "merchantId",       "value": "",                             "type": "string" },
-    { "key": "merchantFeeId",    "value": "",                             "type": "string" },
-    { "key": "defaultFeeId",     "value": "",                             "type": "string" },
-    { "key": "merchantCode",     "value": "CADOOBI01",                   "type": "string" },
-    { "key": "operatorId",       "value": "",                             "type": "string" },
-    { "key": "paymentReference", "value": "",                             "type": "string" },
-    { "key": "cardCode",         "value": "",                             "type": "string" },
-    { "key": "payoutId",         "value": "",                             "type": "string" }
+    { "key": "baseUrl",            "value": "http://localhost:8081/api/v1", "type": "string" },
+    { "key": "token",              "value": "",                             "type": "string" },
+    { "key": "refreshToken",       "value": "",                             "type": "string" },
+    { "key": "userId",             "value": "",                             "type": "string" },
+    { "key": "roleId",             "value": "",                             "type": "string" },
+    { "key": "permissionId",       "value": "",                             "type": "string" },
+    { "key": "merchantId",         "value": "",                             "type": "string" },
+    { "key": "merchantFeeId",      "value": "",                             "type": "string" },
+    { "key": "defaultFeeId",       "value": "",                             "type": "string" },
+    { "key": "merchantCode",       "value": "CADOOBI01",                   "type": "string" },
+    { "key": "operatorId",         "value": "",                             "type": "string" },
+    { "key": "paymentReference",   "value": "",                             "type": "string" },
+    { "key": "generatedReference", "value": "",                             "type": "string" },
+    { "key": "cardCode",           "value": "",                             "type": "string" },
+    { "key": "payoutId",           "value": "",                             "type": "string" },
+    { "key": "apiKey",             "value": "",                             "type": "string" }
   ],
   "item": [
     {
@@ -1631,6 +1633,20 @@
           "name": "Initiate Payment",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Generate unique payment reference",
+                  "const timestamp = Date.now();",
+                  "const random = Math.random().toString(36).substring(2, 8).toUpperCase();",
+                  "const reference = `PAY-${timestamp}-${random}`;",
+                  "pm.collectionVariables.set('generatedReference', reference);",
+                  "console.log('Generated payment reference:', reference);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "exec": [
@@ -1644,14 +1660,16 @@
             }
           ],
           "request": {
+            "auth": { "type": "noauth" },
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Accept",       "value": "application/json" }
+              { "key": "X-API-Key",    "value": "{{apiKey}}",            "type": "text" },
+              { "key": "Content-Type", "value": "application/json",     "type": "text" },
+              { "key": "Accept",       "value": "application/json",     "type": "text" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reference\": \"CADOOBI01-20240301-A1B2C3D4\",\n  \"merchantId\": \"{{merchantId}}\",\n  \"merchantCode\": \"{{merchantCode}}\",\n  \"operatorCode\": \"WAVE\",\n  \"amount\": 5000,\n  \"currency\": \"XOF\",\n  \"payerPhone\": \"+221770000001\",\n  \"payerFullName\": \"Mamadou Diallo\",\n  \"recipientPhone\": \"+221770000002\",\n  \"recipientName\": \"Cadoobi Store\",\n  \"callbackUrl\": \"https://merchant.example.com/callbacks/payment\"\n}",
+              "raw": "{\n  \"reference\": \"{{generatedReference}}\",\n  \"merchantId\": \"{{merchantId}}\",\n  \"merchantCode\": \"{{merchantCode}}\",\n  \"operatorCode\": \"WAVE\",\n  \"amount\": 5000,\n  \"currency\": \"XOF\",\n  \"payerPhone\": \"+221770000001\",\n  \"payerFullName\": \"Mamadou Diallo\",\n  \"recipientPhone\": \"+221770000002\",\n  \"recipientName\": \"Cadoobi Store\",\n  \"callbackUrl\": \"https://merchant.example.com/callbacks/payment\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -1659,7 +1677,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["payments"]
             },
-            "description": "Initiates a new payment transaction. `reference` must be unique. The auto-test saves the returned reference into `{{paymentReference}}`."
+            "description": "Initiates a new payment transaction using API Key authentication.\n\n**Authentication**: Requires `X-API-Key` header (not Bearer token).\n\n**Setup**:\n1. Create an API key first using POST /api-keys (with Bearer token)\n2. Save the API key to `{{apiKey}}` collection variable\n3. Use this endpoint with the API key\n\n**Auto-generated values**:\n- `reference`: Automatically generated unique reference (format: PAY-{timestamp}-{random})\n- The returned reference is saved to `{{paymentReference}}` variable"
           },
           "response": [
             {
@@ -1682,6 +1700,13 @@
               "code": 400,
               "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 400,\n    \"type\": \"VALIDATION_ERROR\",\n    \"message\": \"Validation failed\",\n    \"details\": {\n      \"amount\": \"must be greater than or equal to 0.01\",\n      \"callbackUrl\": \"must not be blank\"\n    }\n  },\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": \"/payments\"\n}"
+            },
+            {
+              "name": "401 Unauthorized - Invalid API Key",
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 401,\n    \"type\": \"UNAUTHORIZED\",\n    \"message\": \"Invalid or expired API key\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": \"/payments\"\n}"
             }
           ]
         },
@@ -1883,6 +1908,127 @@
               "code": 409,
               "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 409,\n    \"type\": \"CONFLICT\",\n    \"message\": \"A redemption with this idempotency key already exists\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": \"/cards/GIFT-ABCD-1234/redeem\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "API Keys",
+      "description": "API key management for external integrations. API keys are used to authenticate payment initiation requests.",
+      "item": [
+        {
+          "name": "Create API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.data.apiKey) {",
+                  "        pm.collectionVariables.set('apiKey', json.data.apiKey);",
+                  "        console.log('API Key saved to {{apiKey}} variable');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Payment Integration Key\",\n  \"description\": \"API key for payment initiation from external systems\",\n  \"allowedReferrers\": [\"https://yoursite.com\", \"https://app.yoursite.com\"],\n  \"expiresAt\": \"2025-12-31T23:59:59Z\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api-keys",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-keys"]
+            },
+            "description": "Creates a new API key for authentication. **IMPORTANT**: The full API key is only shown once in the response - store it securely! The test script automatically saves it to `{{apiKey}}`."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"API key created successfully. Store it securely - it won't be shown again.\",\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"apiKey\": \"pk_AbCdEf1234567890XyZaBcDeFgHiJkLmNoPqRsTuVwXyZ\",\n    \"maskedApiKey\": \"pk_AbCd****...****XyZ\",\n    \"name\": \"Payment Integration Key\",\n    \"description\": \"API key for payment initiation from external systems\",\n    \"allowedReferrers\": [\"https://yoursite.com\", \"https://app.yoursite.com\"],\n    \"isActive\": true,\n    \"expiresAt\": \"2025-12-31T23:59:59Z\",\n    \"lastUsedAt\": null,\n    \"createdAt\": \"2024-04-05T10:00:00Z\",\n    \"updatedAt\": \"2024-04-05T10:00:00Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All API Keys",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api-keys",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-keys"]
+            },
+            "description": "Returns all API keys for the authenticated user. Keys are shown in masked format for security."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"2 API key(s) found\",\n  \"data\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"apiKey\": null,\n      \"maskedApiKey\": \"pk_AbCd****...****XyZ\",\n      \"name\": \"Payment Integration Key\",\n      \"description\": \"API key for payment initiation\",\n      \"allowedReferrers\": [\"https://yoursite.com\"],\n      \"isActive\": true,\n      \"expiresAt\": \"2025-12-31T23:59:59Z\",\n      \"lastUsedAt\": \"2024-04-05T12:30:00Z\",\n      \"createdAt\": \"2024-04-05T10:00:00Z\",\n      \"updatedAt\": \"2024-04-05T10:00:00Z\"\n    },\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"apiKey\": null,\n      \"maskedApiKey\": \"pk_XyZ1****...****AbC\",\n      \"name\": \"Testing Key\",\n      \"description\": \"For development testing\",\n      \"allowedReferrers\": [],\n      \"isActive\": false,\n      \"expiresAt\": null,\n      \"lastUsedAt\": null,\n      \"createdAt\": \"2024-04-01T10:00:00Z\",\n      \"updatedAt\": \"2024-04-01T10:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update API Key",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated API Key Name\",\n  \"description\": \"Updated description\",\n  \"allowedReferrers\": [\"https://newsite.com\"],\n  \"isActive\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api-keys/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-keys", ":id"],
+              "variable": [{ "key": "id", "value": "550e8400-e29b-41d4-a716-446655440000" }]
+            },
+            "description": "Updates an existing API key. The key value itself cannot be changed."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete API Key",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api-keys/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-keys", ":id"],
+              "variable": [{ "key": "id", "value": "550e8400-e29b-41d4-a716-446655440000" }]
+            },
+            "description": "Deletes an API key. This action is permanent and cannot be undone."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"API key deleted successfully\",\n  \"data\": null\n}"
             }
           ]
         }
