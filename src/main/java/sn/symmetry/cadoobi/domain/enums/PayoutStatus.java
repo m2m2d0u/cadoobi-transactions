@@ -1,7 +1,8 @@
 package sn.symmetry.cadoobi.domain.enums;
 
 public enum PayoutStatus {
-    PENDING,
-    COMPLETED,
-    FAILED
+    PENDING,      // Created but not yet executed
+    PROCESSING,   // Executed and being processed by operator
+    COMPLETED,    // Successfully completed
+    FAILED        // Failed or rejected
 }

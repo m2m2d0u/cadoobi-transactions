@@ -7,10 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import sn.symmetry.cadoobi.domain.entity.LedgerEntry;
-import sn.symmetry.cadoobi.domain.entity.MerchantAccount;
-import sn.symmetry.cadoobi.domain.entity.PaymentTransaction;
-import sn.symmetry.cadoobi.domain.entity.PayoutTransaction;
+import sn.symmetry.cadoobi.domain.entity.*;
 import sn.symmetry.cadoobi.domain.enums.LedgerDirection;
 import sn.symmetry.cadoobi.domain.enums.LedgerEntryType;
 import sn.symmetry.cadoobi.dto.LedgerEntryResponse;
@@ -72,7 +69,7 @@ public class LedgerService {
      * Checks available balance before locking; throws BusinessException if insufficient.
      * Sets merchantFeeAmount on the PayoutTransaction before it is persisted.
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public BigDecimal calculateAndLockForPayout(PayoutTransaction tx) {
         String idempotencyKey = "PAYOUT_LOCK_" + tx.getId();
         if (ledgerEntryRepository.existsByIdempotencyKey(idempotencyKey)) {
@@ -238,11 +235,21 @@ public class LedgerService {
             });
     }
 
-    private UUID resolveMerchantId(String symmetryMerchantId) {
-        return merchantRepository.findBySymmetryMerchantId(symmetryMerchantId)
-            .orElseThrow(() -> new ResourceNotFoundException(
-                "Merchant not found with symmetryMerchantId: " + symmetryMerchantId))
-            .getId();
+    private UUID resolveMerchantId(String merchantIdOrSymmetryId) {
+        // Try to parse as UUID first (internal merchant ID)
+        try {
+            UUID merchantUuid = UUID.fromString(merchantIdOrSymmetryId);
+            return merchantRepository.findById(merchantUuid)
+                .map(BaseEntity::getId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                    "Merchant not found with id: " + merchantIdOrSymmetryId));
+        } catch (IllegalArgumentException e) {
+            // Not a valid UUID, try as symmetryMerchantId
+            return merchantRepository.findBySymmetryMerchantId(merchantIdOrSymmetryId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                    "Merchant not found with symmetryMerchantId: " + merchantIdOrSymmetryId))
+                .getId();
+        }
     }
 
     private void writeLedgerEntry(MerchantAccount account, LedgerDirection direction,

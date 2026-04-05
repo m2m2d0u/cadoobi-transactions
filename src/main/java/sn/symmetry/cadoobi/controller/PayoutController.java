@@ -12,16 +12,21 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 import sn.symmetry.cadoobi.domain.enums.PayoutStatus;
 import sn.symmetry.cadoobi.dto.CreatePayoutRequest;
 import sn.symmetry.cadoobi.dto.PayoutResponse;
 import sn.symmetry.cadoobi.dto.common.ControllerApiResponse;
+import sn.symmetry.cadoobi.security.CustomUserDetails;
 import sn.symmetry.cadoobi.service.PayoutService;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -68,15 +73,83 @@ public class PayoutController {
     }
 
     @GetMapping
-    @Operation(summary = "List payouts by merchant", description = "Returns paginated payouts for a merchant (by symmetry merchant ID)")
-    @ApiResponse(responseCode = "200", description = "Payouts retrieved successfully")
-    public ResponseEntity<ControllerApiResponse<Page<PayoutResponse>>> getPayoutsByMerchant(
-        @Parameter(description = "Symmetry merchant ID", required = true) @RequestParam String merchantId,
-        @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
+    @Operation(
+        summary = "List all payouts with role-based access",
+        description = "Retrieves payouts with pagination. SUPER_ADMIN and ADMIN can view all payouts. " +
+                     "Other users can only view payouts for merchants they manage."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Payouts retrieved successfully",
+            content = @Content(schema = @Schema(implementation = PayoutResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - user not authenticated",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        )
+    })
+    public ResponseEntity<ControllerApiResponse<List<PayoutResponse>>> getAllPayouts(
+        Authentication authentication,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        Page<PayoutResponse> payouts = payoutService.getPayoutsByMerchant(merchantId, pageable);
-        return ResponseEntity.ok(ControllerApiResponse.success(payouts,
-            payouts.getTotalElements() + " payout(s) found"));
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        UUID currentUserId = userDetails.getUserId();
+
+        // Check if user has SUPER_ADMIN or ADMIN role
+        boolean isAdmin = userDetails.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"))
+                       || userDetails.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+        log.info("Fetching payouts for user: {}, isAdmin: {}", currentUserId, isAdmin);
+
+        Page<PayoutResponse> page = payoutService.getAllPayouts(currentUserId, isAdmin, pageable);
+
+        return ResponseEntity.ok(ControllerApiResponse.paged(
+            page,
+            page.getTotalElements() + " payout(s) found"
+        ));
+    }
+
+    @PostMapping("/{id}/execute")
+    @Operation(
+        summary = "Execute payout",
+        description = "Executes a PENDING payout by initiating the withdrawal transaction with the operator. " +
+                     "Changes status from PENDING to PROCESSING."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Payout executed successfully",
+            content = @Content(schema = @Schema(implementation = PayoutResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid payout state - only PENDING payouts can be executed",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Payout not found",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        )
+    })
+    public ResponseEntity<ControllerApiResponse<PayoutResponse>> executePayout(
+        @Parameter(description = "Payout UUID", required = true) @PathVariable UUID id
+    ) {
+        log.info("Executing payout: id={}", id);
+        PayoutResponse payout = payoutService.executePayout(id);
+        return ResponseEntity.ok(ControllerApiResponse.success(payout, "Payout executed successfully"));
     }
 
     @PutMapping("/{id}/status")

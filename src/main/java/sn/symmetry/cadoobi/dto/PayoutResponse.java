@@ -20,6 +20,9 @@ public class PayoutResponse {
     @Schema(description = "Symmetry merchant ID")
     private String merchantId;
 
+    @Schema(description = "Merchant code")
+    private String merchantCode;
+
     @Schema(description = "Operator code used for this payout")
     private String operatorCode;
 
