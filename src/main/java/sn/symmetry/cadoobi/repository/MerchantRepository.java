@@ -31,5 +31,7 @@ public interface MerchantRepository extends JpaRepository<Merchant, UUID> {
 
     Page<Merchant> findByUserId(UUID userId, Pageable pageable);
 
+    Page<Merchant> findByUserIdAndStatus(UUID userId, MerchantStatus status, Pageable pageable);
+
     Optional<Merchant> findBySymmetryMerchantId(String symmetryMerchantId);
 }

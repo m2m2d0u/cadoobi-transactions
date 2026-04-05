@@ -183,6 +183,42 @@ public class MerchantService {
         return merchantRepository.findByUserId(userId, pageable).map(this::toResponse);
     }
 
+    /**
+     * Get all merchants with role-based access control.
+     * - SUPER_ADMIN and ADMIN can view all merchants
+     * - Other users can only view merchants they manage
+     */
+    @Transactional(readOnly = true)
+    public Page<MerchantResponse> getAllMerchants(UUID currentUserId, boolean isAdmin, Pageable pageable) {
+        if (isAdmin) {
+            // Admin users can see all merchants
+            return merchantRepository.findAll(pageable).map(this::toResponse);
+        } else {
+            // Regular users can only see merchants they manage
+            return merchantRepository.findByUserId(currentUserId, pageable).map(this::toResponse);
+        }
+    }
+
+    /**
+     * Get merchants with role-based access control and optional status filter.
+     * - SUPER_ADMIN and ADMIN can view all merchants (with optional status filter)
+     * - Other users can only view merchants they manage (with optional status filter)
+     */
+    @Transactional(readOnly = true)
+    public Page<MerchantResponse> getAllMerchants(UUID currentUserId, boolean isAdmin, MerchantStatus status, Pageable pageable) {
+        if (status != null) {
+            if (isAdmin) {
+                // Admin users can see all merchants filtered by status
+                return merchantRepository.findByStatus(status, pageable).map(this::toResponse);
+            } else {
+                // Regular users can only see their merchants filtered by status
+                return merchantRepository.findByUserIdAndStatus(currentUserId, status, pageable).map(this::toResponse);
+            }
+        } else {
+            return getAllMerchants(currentUserId, isAdmin, pageable);
+        }
+    }
+
     // ── Internal helpers ──────────────────────────────────────────────────────
 
     public Merchant findById(UUID id) {

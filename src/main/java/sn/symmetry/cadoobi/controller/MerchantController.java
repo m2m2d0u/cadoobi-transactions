@@ -16,6 +16,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 import sn.symmetry.cadoobi.domain.enums.MerchantStatus;
 import sn.symmetry.cadoobi.dto.common.ControllerApiResponse;
@@ -23,6 +25,7 @@ import sn.symmetry.cadoobi.dto.CreateMerchantRequest;
 import sn.symmetry.cadoobi.dto.MerchantResponse;
 import sn.symmetry.cadoobi.dto.UpdateMerchantRequest;
 import sn.symmetry.cadoobi.dto.UpdateMerchantStatusRequest;
+import sn.symmetry.cadoobi.security.CustomUserDetails;
 import sn.symmetry.cadoobi.service.MerchantService;
 
 import java.util.List;
@@ -39,8 +42,9 @@ public class MerchantController {
 
     @GetMapping
     @Operation(
-        summary = "List all merchants",
-        description = "Retrieves merchants with pagination, optionally filtered by status"
+        summary = "List all merchants with role-based access",
+        description = "Retrieves merchants with pagination. SUPER_ADMIN and ADMIN can view all merchants. " +
+                     "Other users can only view merchants they manage. Optionally filtered by status."
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -49,19 +53,32 @@ public class MerchantController {
             content = @Content(schema = @Schema(implementation = MerchantResponse.class))
         ),
         @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - user not authenticated",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        ),
+        @ApiResponse(
             responseCode = "500",
             description = "Internal server error",
             content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
         )
     })
     public ResponseEntity<ControllerApiResponse<List<MerchantResponse>>> getAllMerchants(
+        Authentication authentication,
         @Parameter(description = "Filter by merchant status (optional)", example = "ACTIVE")
         @RequestParam(required = false) MerchantStatus status,
         @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        Page<MerchantResponse> page = status != null
-            ? merchantService.getMerchantsByStatus(status, pageable)
-            : merchantService.getAllMerchants(pageable);
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        UUID currentUserId = userDetails.getUserId();
+
+        // Check if user has SUPER_ADMIN or ADMIN role
+        boolean isAdmin = userDetails.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"))
+                       || userDetails.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+        log.info("Fetching merchants for user: {}, isAdmin: {}, status filter: {}", currentUserId, isAdmin, status);
+
+        Page<MerchantResponse> page = merchantService.getAllMerchants(currentUserId, isAdmin, status, pageable);
 
         return ResponseEntity.ok(ControllerApiResponse.paged(
             page,

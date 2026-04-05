@@ -24,6 +24,9 @@ public class PaymentResponse {
     @Schema(description = "Merchant identifier", example = "MCH-001")
     private String merchantId;
 
+    @Schema(description = "Payer phone", example = "221770000000")
+    private String payerPhone;
+
     @Schema(description = "Merchant code", example = "SHOP123")
     private String merchantCode;
 

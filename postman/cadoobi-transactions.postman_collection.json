@@ -1685,6 +1685,47 @@
           ]
         },
         {
+          "name": "Get All Payment Transactions (Role-Based)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/payments?page=0&size=20&sort=createdAt,desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"],
+              "query": [
+                { "key": "page", "value": "0", "description": "Page number (0-indexed)" },
+                { "key": "size", "value": "20", "description": "Items per page" },
+                { "key": "sort", "value": "createdAt,desc", "description": "Sort field and direction" }
+              ]
+            },
+            "description": "Returns all payment transactions with role-based access control. SUPER_ADMIN and ADMIN can view all transactions. Other users can only view transactions for their merchant accounts."
+          },
+          "response": [
+            {
+              "name": "200 OK - Admin User",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"150 payment transaction(s) found\",\n  \"data\": [\n    {\n      \"id\": \"770e8400-e29b-41d4-a716-446655440001\",\n      \"reference\": \"CADOOBI01-20240405-ABC123\",\n      \"merchantCode\": \"CADOOBI01\",\n      \"merchantId\": \"SYMM-12345\",\n      \"operatorCode\": \"ORANGE_MONEY\",\n      \"amount\": 10000.00,\n      \"feeAmount\": 200.00,\n      \"netAmount\": 9800.00,\n      \"currency\": \"XOF\",\n      \"status\": \"COMPLETED\",\n      \"operatorTransactionId\": \"OP-987654321\",\n      \"paymentUrl\": null,\n      \"expiresAt\": \"2024-04-06T12:00:00Z\",\n      \"createdAt\": \"2024-04-05T12:00:00Z\"\n    },\n    {\n      \"id\": \"770e8400-e29b-41d4-a716-446655440002\",\n      \"reference\": \"MERCHANT02-20240405-XYZ789\",\n      \"merchantCode\": \"MERCHANT02\",\n      \"merchantId\": \"SYMM-67890\",\n      \"operatorCode\": \"WAVE\",\n      \"amount\": 5000.00,\n      \"feeAmount\": 100.00,\n      \"netAmount\": 4900.00,\n      \"currency\": \"XOF\",\n      \"status\": \"PENDING\",\n      \"operatorTransactionId\": null,\n      \"paymentUrl\": \"https://pay.wave.com/xyz\",\n      \"expiresAt\": \"2024-04-06T10:00:00Z\",\n      \"createdAt\": \"2024-04-05T10:00:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 0,\n    \"size\": 20,\n    \"totalElements\": 150,\n    \"totalPages\": 8,\n    \"first\": true,\n    \"last\": false\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-04-05T13:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "200 OK - Regular User",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"25 payment transaction(s) found\",\n  \"data\": [\n    {\n      \"id\": \"770e8400-e29b-41d4-a716-446655440001\",\n      \"reference\": \"CADOOBI01-20240405-ABC123\",\n      \"merchantCode\": \"CADOOBI01\",\n      \"merchantId\": \"SYMM-12345\",\n      \"operatorCode\": \"ORANGE_MONEY\",\n      \"amount\": 10000.00,\n      \"feeAmount\": 200.00,\n      \"netAmount\": 9800.00,\n      \"currency\": \"XOF\",\n      \"status\": \"COMPLETED\",\n      \"operatorTransactionId\": \"OP-987654321\",\n      \"paymentUrl\": null,\n      \"expiresAt\": \"2024-04-06T12:00:00Z\",\n      \"createdAt\": \"2024-04-05T12:00:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 0,\n    \"size\": 20,\n    \"totalElements\": 25,\n    \"totalPages\": 2,\n    \"first\": true,\n    \"last\": false\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-04-05T13:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 401,\n    \"type\": \"UNAUTHORIZED\",\n    \"message\": \"Full authentication is required to access this resource\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-04-05T13:00:00Z\",\n  \"path\": \"/payments\"\n}"
+            }
+          ]
+        },
+        {
           "name": "Get Payment by Reference",
           "request": {
             "method": "GET",
@@ -1714,7 +1755,7 @@
           ]
         },
         {
-          "name": "Handle Operator Callback — WAVE",
+          "name": "Handle Operator Callback",
           "request": {
             "auth": { "type": "noauth" },
             "method": "POST",
@@ -1724,23 +1765,44 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"transactionId\": \"WAVE-TXN-123456\",\n  \"reference\": \"CADOOBI01-20240301-A1B2C3D4\",\n  \"status\": \"COMPLETED\",\n  \"amount\": 5000,\n  \"currency\": \"XOF\"\n}",
+              "raw": "{\n  \"operatorReference\": \"OP-123456789\",\n  \"paymentReference\": \"CADOOBI01-20240405-ABC123\",\n  \"status\": \"SUCCESS\",\n  \"message\": \"Payment completed successfully\",\n  \"operatorTransactionId\": \"TXN-987654321\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{baseUrl}}/payments/callbacks/WAVE",
+              "raw": "{{baseUrl}}/payments/callbacks/ORANGE_MONEY",
               "host": ["{{baseUrl}}"],
-              "path": ["payments", "callbacks", "WAVE"]
+              "path": ["payments", "callbacks", "ORANGE_MONEY"]
             },
-            "description": "Receives an asynchronous callback from an operator. Replace `WAVE` in the path with `OM` or `FREE` for other operators. This endpoint is typically called by the operator's system, not by clients — no auth required."
+            "description": "Receives and processes payment status callbacks from external payment operators. Replace the operator code (ORANGE_MONEY) with WAVE, FREE_MONEY, etc. This endpoint is typically called by the operator's system, not by clients — no auth required."
           },
           "response": [
             {
-              "name": "200 OK",
+              "name": "200 OK - Callback Processed",
               "status": "OK",
               "code": 200,
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Callback received and queued for processing\",\n  \"data\": null,\n  \"error\": null,\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": null\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Callback processed successfully\",\n  \"data\": null,\n  \"error\": null,\n  \"timestamp\": \"2024-04-05T12:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "404 Payment Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 404,\n    \"type\": \"NOT_FOUND\",\n    \"message\": \"Payment not found with reference: UNKNOWN-REF\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-04-05T12:00:00Z\",\n  \"path\": \"/payments/callbacks/ORANGE_MONEY\"\n}"
+            },
+            {
+              "name": "409 Duplicate Callback",
+              "status": "Conflict",
+              "code": 409,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 409,\n    \"type\": \"CONFLICT\",\n    \"message\": \"Callback already processed for operator reference: OP-123456789\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-04-05T12:00:00Z\",\n  \"path\": \"/payments/callbacks/ORANGE_MONEY\"\n}"
+            },
+            {
+              "name": "400 Payment Already in Final State",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 400,\n    \"type\": \"BAD_REQUEST\",\n    \"message\": \"Payment already in final state: COMPLETED\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-04-05T12:00:00Z\",\n  \"path\": \"/payments/callbacks/ORANGE_MONEY\"\n}"
             }
           ]
         }
@@ -1820,6 +1882,127 @@
               "code": 409,
               "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 409,\n    \"type\": \"CONFLICT\",\n    \"message\": \"A redemption with this idempotency key already exists\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-03-01T12:00:00Z\",\n  \"path\": \"/cards/GIFT-ABCD-1234/redeem\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Ledger",
+      "description": "Ledger and balance management endpoints for tracking merchant account balances and transaction history.",
+      "item": [
+        {
+          "name": "Get All Merchant Balances",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/merchants/{{merchantId}}/ledger/balances",
+              "host": ["{{baseUrl}}"],
+              "path": ["merchants", "{{merchantId}}", "ledger", "balances"]
+            },
+            "description": "Returns all ledger account balances for a merchant (one per currency)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"1 account(s) found\",\n  \"data\": [\n    {\n      \"accountId\": \"ac0e8400-e29b-41d4-a716-446655440000\",\n      \"merchantId\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n      \"currency\": \"XOF\",\n      \"balance\": 50000.00,\n      \"lockedBalance\": 5000.00,\n      \"availableBalance\": 45000.00,\n      \"updatedAt\": \"2024-06-01T10:00:00Z\"\n    }\n  ],\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Merchant Balance",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/merchants/{{merchantId}}/ledger/balance?currency=XOF",
+              "host": ["{{baseUrl}}"],
+              "path": ["merchants", "{{merchantId}}", "ledger", "balance"],
+              "query": [
+                { "key": "currency", "value": "XOF", "description": "Currency code (default: XOF)" }
+              ]
+            },
+            "description": "Returns the ledger balance for a specific merchant and currency."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Balance retrieved successfully\",\n  \"data\": {\n    \"accountId\": \"ac0e8400-e29b-41d4-a716-446655440000\",\n    \"merchantId\": \"aa0e8400-e29b-41d4-a716-446655440000\",\n    \"currency\": \"XOF\",\n    \"balance\": 50000.00,\n    \"lockedBalance\": 5000.00,\n    \"availableBalance\": 45000.00,\n    \"updatedAt\": \"2024-06-01T10:00:00Z\"\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Merchant Ledger Entries",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/merchants/{{merchantId}}/ledger/entries?currency=XOF&page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["merchants", "{{merchantId}}", "ledger", "entries"],
+              "query": [
+                { "key": "currency", "value": "XOF", "description": "Currency code (default: XOF)" },
+                { "key": "page", "value": "0", "description": "Page number (0-indexed)" },
+                { "key": "size", "value": "20", "description": "Items per page" }
+              ]
+            },
+            "description": "Returns paginated ledger history for a specific merchant."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"50 entry/entries found\",\n  \"data\": [\n    {\n      \"id\": \"le0e8400-e29b-41d4-a716-446655440001\",\n      \"merchantAccountId\": \"ac0e8400-e29b-41d4-a716-446655440000\",\n      \"direction\": \"CREDIT\",\n      \"entryType\": \"PAYIN_SETTLEMENT\",\n      \"amount\": 9800.00,\n      \"currency\": \"XOF\",\n      \"description\": \"PAYIN settled: ref=PAY-123\",\n      \"idempotencyKey\": \"PAYIN_SETTLEMENT_xxx\",\n      \"paymentTransactionId\": \"pt0e8400-e29b-41d4-a716-446655440001\",\n      \"payoutTransactionId\": null,\n      \"createdAt\": \"2024-06-01T09:00:00Z\"\n    },\n    {\n      \"id\": \"le0e8400-e29b-41d4-a716-446655440002\",\n      \"merchantAccountId\": \"ac0e8400-e29b-41d4-a716-446655440000\",\n      \"direction\": \"DEBIT\",\n      \"entryType\": \"PAYOUT_SETTLEMENT\",\n      \"amount\": 5000.00,\n      \"currency\": \"XOF\",\n      \"description\": \"PAYOUT settled: amount=5000.00\",\n      \"idempotencyKey\": \"PAYOUT_SETTLEMENT_yyy\",\n      \"paymentTransactionId\": null,\n      \"payoutTransactionId\": \"po0e8400-e29b-41d4-a716-446655440001\",\n      \"createdAt\": \"2024-06-01T08:00:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 0,\n    \"size\": 20,\n    \"totalElements\": 50,\n    \"totalPages\": 3,\n    \"first\": true,\n    \"last\": false\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:00:00Z\",\n  \"path\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All Ledger Entries (Role-Based)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/ledger/entries?page=0&size=20&sort=createdAt,desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["ledger", "entries"],
+              "query": [
+                { "key": "page", "value": "0", "description": "Page number (0-indexed)" },
+                { "key": "size", "value": "20", "description": "Items per page" },
+                { "key": "sort", "value": "createdAt,desc", "description": "Sort field and direction" }
+              ]
+            },
+            "description": "Returns all ledger entries with role-based access control. SUPER_ADMIN and ADMIN can view all entries. Other users can only view entries for their merchant accounts."
+          },
+          "response": [
+            {
+              "name": "200 OK - Admin User",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"150 ledger entry/entries found\",\n  \"data\": [\n    {\n      \"id\": \"le0e8400-e29b-41d4-a716-446655440001\",\n      \"merchantAccountId\": \"ac0e8400-e29b-41d4-a716-446655440000\",\n      \"direction\": \"CREDIT\",\n      \"entryType\": \"PAYIN_SETTLEMENT\",\n      \"amount\": 9800.00,\n      \"currency\": \"XOF\",\n      \"description\": \"PAYIN settled: ref=PAY-123\",\n      \"idempotencyKey\": \"PAYIN_SETTLEMENT_xxx\",\n      \"paymentTransactionId\": \"pt0e8400-e29b-41d4-a716-446655440001\",\n      \"payoutTransactionId\": null,\n      \"createdAt\": \"2024-06-01T09:00:00Z\"\n    },\n    {\n      \"id\": \"le0e8400-e29b-41d4-a716-446655440002\",\n      \"merchantAccountId\": \"ac0e8400-e29b-41d4-a716-446655440001\",\n      \"direction\": \"DEBIT\",\n      \"entryType\": \"PAYOUT_LOCK\",\n      \"amount\": 3000.00,\n      \"currency\": \"XOF\",\n      \"description\": \"PAYOUT locked: amount=2850.00 + fee=150.00\",\n      \"idempotencyKey\": \"PAYOUT_LOCK_zzz\",\n      \"paymentTransactionId\": null,\n      \"payoutTransactionId\": \"po0e8400-e29b-41d4-a716-446655440002\",\n      \"createdAt\": \"2024-06-01T08:30:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 0,\n    \"size\": 20,\n    \"totalElements\": 150,\n    \"totalPages\": 8,\n    \"first\": true,\n    \"last\": false\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "200 OK - Regular User",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"25 ledger entry/entries found\",\n  \"data\": [\n    {\n      \"id\": \"le0e8400-e29b-41d4-a716-446655440001\",\n      \"merchantAccountId\": \"ac0e8400-e29b-41d4-a716-446655440000\",\n      \"direction\": \"CREDIT\",\n      \"entryType\": \"PAYIN_SETTLEMENT\",\n      \"amount\": 9800.00,\n      \"currency\": \"XOF\",\n      \"description\": \"PAYIN settled: ref=PAY-123\",\n      \"idempotencyKey\": \"PAYIN_SETTLEMENT_xxx\",\n      \"paymentTransactionId\": \"pt0e8400-e29b-41d4-a716-446655440001\",\n      \"payoutTransactionId\": null,\n      \"createdAt\": \"2024-06-01T09:00:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 0,\n    \"size\": 20,\n    \"totalElements\": 25,\n    \"totalPages\": 2,\n    \"first\": true,\n    \"last\": false\n  },\n  \"error\": null,\n  \"timestamp\": \"2024-06-01T10:00:00Z\",\n  \"path\": null\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"message\": null,\n  \"data\": null,\n  \"error\": {\n    \"code\": 401,\n    \"type\": \"UNAUTHORIZED\",\n    \"message\": \"Full authentication is required to access this resource\",\n    \"details\": null\n  },\n  \"timestamp\": \"2024-06-01T10:00:00Z\",\n  \"path\": \"/ledger/entries\"\n}"
             }
           ]
         }

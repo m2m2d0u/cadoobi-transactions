@@ -1,5 +1,6 @@
 package sn.symmetry.cadoobi.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -10,13 +11,24 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 import sn.symmetry.cadoobi.dto.common.ControllerApiResponse;
 import sn.symmetry.cadoobi.dto.InitiatePaymentRequest;
+import sn.symmetry.cadoobi.dto.OperatorCallbackRequest;
 import sn.symmetry.cadoobi.dto.PaymentResponse;
+import sn.symmetry.cadoobi.security.CustomUserDetails;
 import sn.symmetry.cadoobi.service.PaymentService;
+
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/payments")
@@ -26,6 +38,7 @@ import sn.symmetry.cadoobi.service.PaymentService;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final ObjectMapper objectMapper;
 
     @PostMapping
     @Operation(
@@ -62,8 +75,8 @@ public class PaymentController {
     public ResponseEntity<ControllerApiResponse<PaymentResponse>> initiatePayment(
         @Valid @RequestBody InitiatePaymentRequest request
     ) {
-        log.info("Received payment initiation request: reference={}, merchant={}, operator={}",
-            request.getReference(), request.getMerchantId(), request.getOperatorCode());
+        log.info("Received payment initiation request: merchant={}, operator={}",
+            request.getMerchantId(), request.getOperatorCode());
 
         PaymentResponse payment = paymentService.initiatePayment(request);
 
@@ -73,6 +86,50 @@ public class PaymentController {
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping
+    @Operation(
+        summary = "Get all payment transactions with role-based access",
+        description = "Returns all payment transactions with pagination. SUPER_ADMIN and ADMIN can view all transactions. " +
+                     "Other users can only view transactions for their merchant accounts."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Payment transactions retrieved successfully",
+            content = @Content(schema = @Schema(implementation = PaymentResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - user not authenticated",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        )
+    })
+    public ResponseEntity<ControllerApiResponse<List<PaymentResponse>>> getAllTransactions(
+        Authentication authentication,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        UUID currentUserId = userDetails.getUserId();
+
+        // Check if user has SUPER_ADMIN or ADMIN role
+        boolean isAdmin = userDetails.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"))
+                       || userDetails.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+        log.info("Fetching payment transactions for user: {}, isAdmin: {}", currentUserId, isAdmin);
+
+        Page<PaymentResponse> transactions = paymentService.getAllTransactions(currentUserId, isAdmin, pageable);
+
+        return ResponseEntity.ok(ControllerApiResponse.paged(
+            transactions,
+            transactions.getTotalElements() + " payment transaction(s) found"
+        ));
     }
 
     @GetMapping("/{reference}")
@@ -116,12 +173,13 @@ public class PaymentController {
     @PostMapping("/callbacks/{operatorCode}")
     @Operation(
         summary = "Handle operator callback",
-        description = "Receives and processes payment status callbacks from external payment operators"
+        description = "Receives and processes payment status callbacks from external payment operators. " +
+                     "The endpoint accepts either JSON or raw string payloads and processes them accordingly."
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200",
-            description = "Callback received and queued for processing",
+            description = "Callback received and processed successfully",
             content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
         ),
         @ApiResponse(
@@ -131,7 +189,12 @@ public class PaymentController {
         ),
         @ApiResponse(
             responseCode = "404",
-            description = "Operator not found",
+            description = "Operator or payment not found",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "409",
+            description = "Duplicate callback - already processed",
             content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
         ),
         @ApiResponse(
@@ -144,7 +207,7 @@ public class PaymentController {
         @Parameter(description = "Operator code identifier", required = true, example = "ORANGE_MONEY")
         @PathVariable String operatorCode,
         @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Raw callback payload from the payment operator",
+            description = "Callback payload from the payment operator (JSON or raw string)",
             required = true
         )
         @RequestBody String payload
@@ -152,12 +215,41 @@ public class PaymentController {
         log.info("Received callback from operator: {}", operatorCode);
         log.debug("Callback payload: {}", payload);
 
-        // TODO: Process callback and update payment status
+        try {
+            OperatorCallbackRequest request;
 
-        ControllerApiResponse<Void> response = ControllerApiResponse.success(
-            "Callback received and queued for processing"
-        );
+            // Try to parse as JSON first
+            try {
+                request = objectMapper.readValue(payload, OperatorCallbackRequest.class);
+                // Store the original raw payload
+                if (request.getRawPayload() == null) {
+                    request.setRawPayload(payload);
+                }
+            } catch (Exception e) {
+                // If JSON parsing fails, treat as raw string and extract what we can
+                log.warn("Failed to parse callback as JSON, treating as raw payload: {}", e.getMessage());
 
-        return ResponseEntity.ok(response);
+                // Create a minimal request object - customize this based on your operators
+                request = OperatorCallbackRequest.builder()
+                    .rawPayload(payload)
+                    .operatorReference("RAW-" + System.currentTimeMillis())
+                    .status("PENDING")
+                    .build();
+            }
+
+            // Process the callback
+            paymentService.handleOperatorCallback(operatorCode, request);
+
+            ControllerApiResponse<Void> response = ControllerApiResponse.success(
+                "Callback processed successfully"
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Error processing operator callback: operator={}, error={}",
+                operatorCode, e.getMessage(), e);
+            throw e;
+        }
     }
 }

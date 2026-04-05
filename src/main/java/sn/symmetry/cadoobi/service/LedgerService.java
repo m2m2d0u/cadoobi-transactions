@@ -51,18 +51,18 @@ public class LedgerService {
         }
 
         MerchantAccount account = getOrCreateAccount(tx.getMerchant().getId(), tx.getCurrency());
-        BigDecimal netAmount = tx.getNetAmount();
+        BigDecimal amount = tx.getAmount();
 
-        account.setBalance(account.getBalance().add(netAmount));
+        account.setBalance(account.getBalance().add(amount));
         merchantAccountRepository.save(account);
 
         writeLedgerEntry(account, LedgerDirection.CREDIT, LedgerEntryType.PAYIN_SETTLEMENT,
-            netAmount, tx.getCurrency(),
+            amount, tx.getCurrency(),
             "PAYIN settled: ref=" + tx.getReference(),
             idempotencyKey, tx, null);
 
         log.info("PAYIN_SETTLEMENT posted: merchant={}, amount={}, ref={}",
-            tx.getMerchant().getCode(), netAmount, tx.getReference());
+            tx.getMerchant().getCode(), amount, tx.getReference());
     }
 
     // ── PAYOUT ────────────────────────────────────────────────────────────────
