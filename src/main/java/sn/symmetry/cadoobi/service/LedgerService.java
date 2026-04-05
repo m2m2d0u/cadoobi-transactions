@@ -202,6 +202,24 @@ public class LedgerService {
             .map(this::toEntryResponse);
     }
 
+    /**
+     * Get all ledger entries with role-based access control.
+     * - SUPER_ADMIN and ADMIN can view all entries
+     * - Other users can only view entries for their own merchant accounts
+     */
+    @Transactional(readOnly = true)
+    public Page<LedgerEntryResponse> getAllLedgerEntries(UUID currentUserId, boolean isAdmin, Pageable pageable) {
+        if (isAdmin) {
+            // Admin users can see all ledger entries
+            return ledgerEntryRepository.findAll(pageable)
+                .map(this::toEntryResponse);
+        } else {
+            // Regular users can only see entries for merchants they manage
+            return ledgerEntryRepository.findByMerchantUserId(currentUserId, pageable)
+                .map(this::toEntryResponse);
+        }
+    }
+
     // ── Internal helpers ──────────────────────────────────────────────────────
 
     public MerchantAccount getOrCreateAccount(UUID merchantId, String currency) {

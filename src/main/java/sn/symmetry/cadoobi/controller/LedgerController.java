@@ -11,12 +11,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 import sn.symmetry.cadoobi.dto.LedgerEntryResponse;
 import sn.symmetry.cadoobi.dto.MerchantBalanceResponse;
 import sn.symmetry.cadoobi.dto.common.ControllerApiResponse;
+import sn.symmetry.cadoobi.security.CustomUserDetails;
 import sn.symmetry.cadoobi.service.LedgerService;
 
 import java.util.List;
@@ -83,5 +87,49 @@ public class LedgerController {
         Page<LedgerEntryResponse> entries = ledgerService.getEntries(merchantId, currency, pageable);
         return ResponseEntity.ok(ControllerApiResponse.success(entries,
             entries.getTotalElements() + " entry/entries found"));
+    }
+
+    @GetMapping("/ledger/entries")
+    @Operation(
+        summary = "Get all ledger entries with role-based access",
+        description = "Returns all ledger entries with pagination. SUPER_ADMIN and ADMIN can view all entries. " +
+                     "Other users can only view entries for their merchant accounts."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Ledger entries retrieved successfully",
+            content = @Content(schema = @Schema(implementation = LedgerEntryResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - user not authenticated",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = ControllerApiResponse.class))
+        )
+    })
+    public ResponseEntity<ControllerApiResponse<List<LedgerEntryResponse>>> getAllLedgerEntries(
+        Authentication authentication,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        UUID currentUserId = userDetails.getUserId();
+
+        // Check if user has SUPER_ADMIN or ADMIN role
+        boolean isAdmin = userDetails.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"))
+                       || userDetails.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+        log.info("Fetching ledger entries for user: {}, isAdmin: {}", currentUserId, isAdmin);
+
+        Page<LedgerEntryResponse> entries = ledgerService.getAllLedgerEntries(currentUserId, isAdmin, pageable);
+
+        return ResponseEntity.ok(ControllerApiResponse.paged(
+            entries,
+            entries.getTotalElements() + " ledger entry/entries found"
+        ));
     }
 }
