@@ -97,6 +97,14 @@ app:
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}        # 24 hours
     refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}  # 7 days
 
+  # Security settings
+  security:
+    encryption:
+      # AES-256 encryption key (base64-encoded 32-byte key)
+      # Generate with: openssl rand -base64 32
+      # IMPORTANT: Change this default key in production!
+      key: ${ENCRYPTION_KEY:/RDM0Dh3A2K1S0hGRjFohlwNDo75RaxnrvaTZJ/qN7s=}
+
 # Logging
 logging:
   level:

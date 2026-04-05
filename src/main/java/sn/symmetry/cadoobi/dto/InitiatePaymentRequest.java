@@ -13,6 +13,11 @@ import java.math.BigDecimal;
 @Schema(description = "Request payload for initiating a payment transaction")
 public class InitiatePaymentRequest {
 
+    @Schema(description = "Unique payment reference identifier", example = "PAY-20240326-123456", required = true)
+    @NotBlank(message = "Reference is required")
+    @Size(max = 100, message = "Reference must not exceed 100 characters")
+    private String reference;
+
     @Schema(description = "Unique merchant identifier", example = "MCH-001", required = true)
     @NotBlank(message = "Merchant ID is required")
     @Size(max = 36, message = "Merchant ID must not exceed 36 characters")

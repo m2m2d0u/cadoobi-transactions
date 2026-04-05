@@ -1,6 +1,7 @@
 package sn.symmetry.cadoobi.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transaction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -31,6 +32,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -64,11 +66,17 @@ public class PaymentService {
             request.getAmount()
         );
 
+        Optional<PaymentTransaction> paymentTransaction = paymentTransactionRepository.findByReference(request.getReference());
+
+        if (paymentTransaction.isPresent()) {
+            throw new DuplicateResourceException("Payment already initiated with reference: " + request.getReference());
+        }
+
         BigDecimal netAmount = request.getAmount().subtract(feeAmount);
-        String reference = generateReference(merchant.getCode());
+//        String reference = generateReference(merchant.getCode());
 
         PaymentTransaction payment = PaymentTransaction.builder()
-            .reference(reference)
+            .reference(request.getReference())
             .merchant(merchant)
             .operator(operator)
             .amount(request.getAmount())
