@@ -105,6 +105,7 @@ public class WebhookDeliveryService {
     /**
      * Checks if a webhook configuration is subscribed to a specific event type.
      * If no events are configured (null or empty), webhook receives all events.
+     * Supports both dot notation (payment.completed) and underscore notation (payment_completed).
      */
     private boolean isSubscribedToEvent(WebhookConfiguration webhook, NotificationEventType eventType) {
         String subscribedEvents = webhook.getSubscribedEvents();
@@ -114,12 +115,15 @@ public class WebhookDeliveryService {
             return true;
         }
 
-        // Check if event type is in the comma-separated list
-        String eventTypeStr = eventType.name().toLowerCase();
+        // Convert enum to dot notation (PAYMENT_COMPLETED -> payment.completed)
+        String eventTypeStr = eventType.name().toLowerCase().replace('_', '.');
         String[] events = subscribedEvents.toLowerCase().split(",");
 
         for (String event : events) {
-            if (event.trim().equals(eventTypeStr)) {
+            String trimmedEvent = event.trim();
+            // Support both formats: payment.completed and payment_completed
+            if (trimmedEvent.equals(eventTypeStr) ||
+                trimmedEvent.equals(eventType.name().toLowerCase())) {
                 return true;
             }
         }
@@ -129,11 +133,13 @@ public class WebhookDeliveryService {
 
     /**
      * Builds the webhook payload structure with event metadata.
+     * Uses dot notation for event type (e.g., payment.completed).
      */
     private Map<String, Object> buildWebhookPayload(NotificationEventType eventType, Object eventData) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("id", UUID.randomUUID().toString());
-        payload.put("type", eventType.name().toLowerCase());
+        // Convert to dot notation: PAYMENT_COMPLETED -> payment.completed
+        payload.put("type", eventType.name().toLowerCase().replace('_', '.'));
         payload.put("timestamp", Instant.now().toEpochMilli());
         payload.put("data", eventData);
 
