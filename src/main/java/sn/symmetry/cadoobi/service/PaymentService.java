@@ -45,6 +45,7 @@ public class PaymentService {
     private final OperatorFeeService operatorFeeService;
     private final MerchantService merchantService;
     private final NotificationService notificationService;
+    private final WebhookDeliveryService webhookDeliveryService;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
 
@@ -171,13 +172,19 @@ public class PaymentService {
         operatorCallbackRepository.save(callback);
 
         // 7. Update payment status
-        updatePaymentStatus(payment.getReference(), newStatus, request.getOperatorTransactionId());
+        PaymentStatus oldStatus = payment.getStatus();
+        payment = updatePaymentStatus(payment.getReference(), newStatus, request.getOperatorTransactionId());
 
-        // 8. Send notification to merchant callback URL
+        // 8. Send notification to merchant callback URL (legacy)
         sendMerchantCallback(payment, newStatus);
 
-        log.info("Operator callback processed successfully: reference={}, newStatus={}",
-                payment.getReference(), newStatus);
+        // 9. Trigger webhooks for status change
+        if (oldStatus != newStatus) {
+            triggerWebhooksForStatusChange(payment, newStatus);
+        }
+
+        log.info("Operator callback processed successfully: reference={}, oldStatus={}, newStatus={}",
+                payment.getReference(), oldStatus, newStatus);
     }
 
     @Transactional
@@ -285,6 +292,48 @@ public class PaymentService {
             log.error("Failed to queue merchant callback for payment: {}", payment.getReference(), e);
             // Don't throw - callback failure shouldn't prevent payment processing
         }
+    }
+
+    /**
+     * Triggers webhooks for payment status changes.
+     * Maps payment status to appropriate webhook event type and sends to configured webhooks.
+     */
+    private void triggerWebhooksForStatusChange(PaymentTransaction payment, PaymentStatus newStatus) {
+        try {
+            // Get user ID from payment's merchant
+            UUID userId = payment.getMerchant().getUser().getId();
+
+            // Map payment status to webhook event type
+            NotificationEventType eventType = mapPaymentStatusToEventType(newStatus);
+
+            // Build webhook payload
+            PaymentResponse paymentResponse = toResponse(payment);
+
+            // Trigger webhooks
+            webhookDeliveryService.triggerWebhooks(userId, eventType, paymentResponse);
+
+            log.info("Triggered webhooks for payment status change: reference={}, status={}, eventType={}",
+                    payment.getReference(), newStatus, eventType);
+
+        } catch (Exception e) {
+            log.error("Failed to trigger webhooks for payment: reference={}, status={}",
+                    payment.getReference(), newStatus, e);
+            // Don't throw - webhook failure shouldn't prevent payment processing
+        }
+    }
+
+    /**
+     * Maps PaymentStatus to NotificationEventType for webhooks.
+     */
+    private NotificationEventType mapPaymentStatusToEventType(PaymentStatus status) {
+        return switch (status) {
+            case INITIATED -> NotificationEventType.PAYMENT_INITIATED;
+            case PENDING -> NotificationEventType.PAYMENT_PENDING;
+            case COMPLETED -> NotificationEventType.PAYMENT_COMPLETED;
+            case FAILED -> NotificationEventType.PAYMENT_FAILED;
+            case CANCELLED -> NotificationEventType.PAYMENT_CANCELLED;
+            case EXPIRED -> NotificationEventType.PAYMENT_EXPIRED;
+        };
     }
 
     private PaymentResponse toResponse(PaymentTransaction payment) {

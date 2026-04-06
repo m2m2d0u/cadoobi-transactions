@@ -14,5 +14,7 @@ public interface WebhookConfigurationRepository extends JpaRepository<WebhookCon
 
     List<WebhookConfiguration> findByUserIdAndIsActiveTrue(UUID userId);
 
+    List<WebhookConfiguration> findByUserIdAndIsActive(UUID userId, Boolean isActive);
+
     List<WebhookConfiguration> findByIsActiveTrue();
 }
